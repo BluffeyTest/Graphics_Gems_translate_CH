@@ -1,10 +1,11 @@
-\documentclass[11pt,a4paper,twoside]{book}
+\documentclass[11pt,b5paper,twoside]{book}
 
 %\usepackage{algorithm}  
 %\usepackage{algorithmic}  
 \usepackage{wallpaper} %使用wallpaper宏包
 
-
+\usepackage[final]{pdfpages} %插入整页pdf
+\usepackage[T1]{fontenc}
 \usepackage{CJK}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
@@ -27,6 +28,14 @@
 %设置行距
 \linespread{1.4}
 
+%设置章节显示
+\usepackage[center]{titlesec}
+%\titleformat{\chapter}
+\definecolor{gray75}{gray}{0.75}
+\newcommand{\hsp}{\hspace{20pt}}
+\titleformat{\chapter}{\Huge\bfseries}{第\,\thechapter\,章\hsp\textcolor{gray75}{|}\hsp}{0pt}{\Huge\bfseries}
+
+
 %c++代码显示环境
 \usepackage{listings}
 \lstset{language=C++}
@@ -37,18 +46,49 @@
 %\usepackage{algorithm}
 %\usepackage{algorithmic}
 
-\author{郭飞}
-\title{图形瑰宝 }
+%\renewcommand{\contensname}{目录}
+
 \begin{document}
 
+\begin{CJK}{UTF8}{gkai}
+
+ 
+\begin{titlepage}
+  \vspace*{1cm}
+	\begin{center}
+		{\Huge \textbf{图形瑰宝}\par}
+		{\large \textbf{第三册}\par}
+		%{\Huge\raggedright 图形瑰宝\par}
+  		%\noindent\hrulefill\par
+  		\vspace*{1cm}
+  		{\large\raggedleft david kirk  著\par}
+  		{\large\raggedleft 郭飞  译\par}
+  		
+  		\vfill
+  		{\Large 2022年\par}
+  		%{\Large\raggedleft Institute\par}
+	\end{center}
+\end{titlepage} 
+\end{CJK}
+%\begin{titlingpage}
+%\maketitle
+%\end{titlingpage}
+%\includepdf{booktest (another copy).pdf}
+
+%\newpage
+
+%\maketitle
+
+%\ThisCenterWallPaper{0.5}{./fig/cover.png}
+
+
 \begin{CJK}{UTF8}{gbsn}
-
-\maketitle
-
-\ThisCenterWallPaper{0.5}{./fig/cover.png}
+\tableofcontents
 
 \newpage
-\part{测试}
+\include{image_process}
 
+
+\clearpage
 \end{CJK}
 \end{document}
