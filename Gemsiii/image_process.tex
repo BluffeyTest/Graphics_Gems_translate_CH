@@ -448,5 +448,93 @@ Bullard, Texas}
 \end{center}
 
 
+\subsection*{问题}
+包括医学成像、地震学和气象学在内的许多领域的数据，都是在一个大立方体网格的顶点上采集的一组测量数据。在这些领域中，从数据立方体生成可视化表示的技术非常重要。许多常见的可视化技术将数据值视为连续函数$F$的样本函数值，并对某些$c$生成$F(x, y, z) = c$的分段平面近似，即函数的等值线。最初的《图形瑰宝》之一，“从采样数据定义表面”，调查了几种最著名的从数据立方体生成等高线的技术(Hall, 1990)。
+
+在本文中，我们将对该类型的所有技术进行增强。这种增强减少了任何等高线近似的元素数量，并改善了元素的形状。第一个改进通常将表示的大小减少约$50\%$，允许更快的重新显示并减少内存需求。第二种方法通过避免在许多照明模型中造成不希望看到的阴影影响的狭窄元素，从而得到质量更好的图片。
+
+\subsection*{基于立方体的轮廓}
+一些作者提出了大致类似的方法，可以从立方体数据网格中创建可视化的等高线。这些方法分别处理每个立方体上的数据，并利用沿立方体边缘的线性插值来计算位于等高线上的点集合。在Lorenson和Cline的Marching Cubes算法(Lorenson和Cline, 1987)中，这些交点通过表查找来连接成边和三角形，表查找的基础是定义立方体顶点的值$F(x, y, z) - c$的符号。
+
+不幸的是，这种方法并不能保证轮廓的连续性，因为共享一张带有混合符号的脸的相邻立方体可以以不同的方式划分(Durst, 1988)。其他人提出了另一种方法，通过对模糊人脸中心的函数进行采样来消除这种情况的歧义(Wyvil等人，1986)。我们称之为这样的方法，通过沿着三次网格边缘的线性插值计算出轮廓的顶点，基于边缘的插值方法。
+
+基于边缘的插值方法的另一个问题是，它们产生的表面网格可能非常不规则，即使是简单的三元数据。这些不规则性包括微小的三角形(当轮廓通过立方体网格的顶点时产生)和狭窄的三角形(当轮廓通过网格的边缘时产生)。根据我们的经验，在某些曲面网格中，这种三角形可以占到三角形的$50\%$。这些形状糟糕的元素通常会降低渲染算法和有限元分析应用于网格的性能，而对近似的总体精度贡献很小。
+
+\subsection*{紧凑立方体}
+这个章节的贡献是一种通用的技术，用于从基于边的插值中消除近简并三角形的问题。该技术背后的想法很简单:当网格的一个顶点靠近表面时，将网格“弯曲”一点，这样顶点就位于表面上。小三角形坍缩成点，小三角形坍缩成边，只剩下形状良好的大三角形。本文的其余部分概述了这一理念的实现;有更详细的解释(Moore和Warren, 1991)。
+
+对数据立方体应用任何基于边的插值算法，并在此过程中，记录沿着立方体边缘生成的每个顶点，该顶点附近的立方体网格的点。我们称这个顶点为它最近的网格点的卫星。如果顶点位于一条边的中点，则可以使用这条边的任意端点，只要共享这条边的所有其他立方体使用同一个端点。当算法的这一阶段完成后，就得到了等高线的三角剖分S和一个离三角剖分的每个顶点最近的网格点。
+\begin{figure}[htbp]%[htbp]
+  \centering
+  \includegraphics[totalheight=1.8in]{./fig/1.5.1.png}
+  \caption{二维案例表紧凑型立方体} 
+  \label{fig:1.5.1}
+\end{figure}
+
+\begin{figure}[htbp]%[htbp]
+  \centering
+  \includegraphics[totalheight=4in]{./fig/1.5.2.png}
+  \caption{一个二维立方体的例子} 
+  \label{fig:1.5.2}
+\end{figure}
+
+为了得到一个新的、更小的等值线近似值，请采用以下步骤:
+\IncMargin{1em}
+\begin{algorithm} 
+\SetKwData{Left}{left}
+\SetKwData{This}{this}
+\SetKwData{Up}{up} 
+\SetKwFunction{Union}{Union}
+\SetKwFunction{WritePixel}{WritePixel}
+\SetKwFunction{Abs}{abs}
+\SetKwFunction{Floor}{floor}
+\SetKwFunction{Ceiling}{ceiling}
+\SetKwFunction{Sign}{sign}
+\SetKwFunction{ReadPixel}{ReadPixel}
+\SetKwFunction{SetColor}{SetColor}
+\SetKwFunction{FindCompress}{FindCompress} 
+\SetKwFunction{Filter}{filter}
+\SetKwFunction{AddContributor}{add\_contributor}
+
+\SetKwInOut{Input}{input}
+\SetKwInOut{Output}{output}
+
+\SetKwData{EdgeSet}{EdgeSet}
+\SetKwData{Point}{point}
+	
+	%\Input{} 
+	%\Output{}
+	 \BlankLine 
+	 \BlankLine
+	 
+	 
+	 
+	 %\tcp{从(x1, y1)到(x2, y2)在第一个八边形内画一条线;所有变量都是整数}
+	
+	\For{ each triangle $T$ in $S$ }{
+		\If{the vertices of $T$ are satellites of distinct gridpoints}{
+			produce a triangle connecting the gridpoints\;
+		}
+		\Else{
+			$T$ collapses to a vertex or edge so ignore it\;
+		}
+		\For{ each gridpoint $g$ of the new triangulation }{
+			displace $g$ to the average position of its satellites;
+		}
+	}
+	
+ 	 	  \caption{等值线近似值}
+ 	 	  \label{algo:approximation} 
+ 	 \end{algorithm}
+\DecMargin{1em} 
+
+
+
+
+
+
+
+
+
 
 \end{CJK}
