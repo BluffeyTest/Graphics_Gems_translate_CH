@@ -1,0 +1,1185 @@
+\begin{CJK}{UTF8}{gkai}
+\chapter{数值和编程技术}
+\end{CJK}
+
+
+\begin{CJK}{UTF8}{gbsn}
+计算机图形学领域充满了复杂的数学，图形程序通常充满了计算密集型的操作。简化计算的技术和技巧或有用的近似总是受欢迎的。本节包含的Gems为那些喜欢“关注细节”的程序员增加了技巧。
+
+
+第一个Gem描述了IEEE标准平方根运算的快速近似，并改进了前一个Gem中提出的技术。第二个Gem描述了围绕众所周知的UNIX(tm)内存分配器“malloc()”放置的包装器，以提高其可用性和可预测性。第三个Gem解释了如何考虑由轨道球控制的3-D旋转，并提供了背后的群论数学。第四个Gem简要介绍了区间算法以及如何在计算机图形学中使用它。
+
+
+第五Gem讨论了与常用的两个、三个或更多数字的循环排列技术相关的效率问题。第六Gem讨论了如何选择颜色来突出显示或选择图像特征，并提出了一个类比魔方的空间!第7个Gem处理的是生成具有各种分布的随机点集，均匀的和其他的。这些技术对于分布射线追踪和其他蒙特卡罗方法非常有用。最后两个Gems采用了二维和三维空间中经常使用的一些概念，并将它们扩展到高维空间中。
+
+\newpage
+\section{IEEE 快速平方根}
+\begin{center}
+\small{
+Steve Hill\\
+University of Kent\\
+Canterbury, Kent, United Kingdom}
+\end{center}
+这个gem是Paul Lalonde和Robert Dawson在Graphics Gems i中提出的快速平方根算法的重新实现。
+
+
+在我的实现中，我添加了一个额外的例程，它允许将平方根表转储为C源代码。该文件可以单独编译，以消除在运行时创建表的必要性。
+
+
+新的例程使用IEEE双精度浮点格式。我包含了许多有用的\#defines ，以使程序更易于访问。注意，在某些体系结构中，单词的顺序是颠倒的。常数MOST\_SIG\_OFFSET 可以设置为1或0，以允许这一事实。
+
+
+表的大小可以通过改变常量SQRT\_TAB 大小来调整。它一定是4的幂。恒定的MANT\_ SHIFTS必须相应地进行调整——如果将表的大小增加四倍，那么从3MANT\_SHIFTS 中减去2。
+
+
+See also G1, 403; G1, 424; G2, 387.\\
+
+\section{一个简单的快速内存分配器}
+\begin{center}
+\small{
+Steve Hill\\
+University of Kent\\
+Canterbury, Kent, United Kingdom}
+\end{center}
+
+这个Gem描述了一个简单的内存分配包，可以用来代替传统的malloc()库函数。该包维护一个内存块链表，以顺序的方式从其中分配内存。如果一个块用完，则从下一个块分配内存。如果下一个块是NULL，则使用malloc()分配一个新块。
+
+
+我们把内存块的列表称为池。一个池可以被全部释放，也可以被重置。在前一种情况下，使用库函数free()将分配给池的所有内存返回给系统。在后一种情况下，不会释放任何内存，但会重置池的高水位标记。这允许在一个操作中丢弃池中分配的所有数据，几乎没有任何开销。然后池中的内存就可以重用了，不需要重新分配。
+
+
+这个包允许程序员创建多个池，并在它们之间切换。
+
+
+该方案的一些优点是:
+
+
+
+\begin{itemize}
+	\item 内存分配很快。
+
+
+\item 数据可能具有更大的局部性。
+
+
+\item 我们不再需要每个数据结构都有一个免费的例程。
+
+
+\item 重置池非常简单。这可能会取代对free()库例程的许多调用。
+
+
+\item 内存泄漏的可能性较小。
+
+\end{itemize}
+
+主要的缺点是:
+
+\begin{itemize}
+  \item 单个结构不能被释放。这可能会导致更大的项目驻留。
+\end{itemize}
+
+
+该软件包已成功用于射线追踪程序。使用了两个池。第一个池保存在读取模型文件时创建的永久数据。第二个池用于在呈现过程中创建的临时数据。在计算完每个像素后重置该池。
+
+
+该一揽子方案的合并产生了三个重大影响。首先，程序运行得更快。虽然速度不是特别快，但是程序的大部分时间都花在计算十字路口，而不是分配内存上。其次，许多操作的代码变得更简单。这是因为消除了对释放内存的调用。最后，所有的空间泄漏都被根除了。这个程序由许多人共同开发，在某些情况下，对适当的内存分配函数的调用被忘记了。使用包消除了对这些调用的需要;因此，空间泄漏也被消除了。
+
+\newpage
+\section{滚动球}
+
+\begin{center}
+\small{
+Andrew J. Hanson\\
+Indiana University\\
+Bloomington, Indiana}
+\end{center}
+
+交互式图形系统通常需要允许用户使用常用的二维输入设备(如鼠标)在三维空间中自由旋转图形对象的技术。实现这一目标受到一个事实的阻碍，即从输入设备的两个参数到定向的三个参数空间没有单一的自然映射。
+
+
+在这里，我们介绍了鼠标驱动三维方向控制的滚动球方法，以及它在其他科学可视化问题上的一些有趣的扩展。这种技术利用连续的二维运动(以球在平桌上滚动而不滑动为模型)来达到任意的三维方向。与其他各种方法不同，滚动球方法只有一个状态，并且完全与上下文无关:可以关闭鼠标光标，忽略移动的历史或演进状态，但仍然确切地知道下一个增量鼠标移动将会产生什么效果。对于从直接操作印象中获益的应用程序来说，这个属性非常有吸引力。
+
+
+很明显，鼠标可以控制围绕两个轴(图1中的$\mathbf{x}$和$\mathbf{y}$方向)的旋转。令人惊讶的是，滚动球还自然地包含了诱导屏幕垂直方向(图1中的$\mathbf{z}$轴)的顺时针和逆时针旋转的能力。根据空间旋转的群体理论的一个基本但违反直觉的性质，在小的顺时针圆周上移动滚动球控制器必然会产生小的逆时针旋转，反之亦然。这就解释了为什么一个明显不可能的三度转动自由度确实可以通过一个上下文无关的二自由度输入设备产生。
+
+
+\begin{figure}
+\centering
+	\subfigure[由它们自己渲染的场景中的一簇物体。]{\includegraphics[max width=.35\columnwidth]{2022_11_30_0cbb01a33d99487fc27fg-084}}\hspace{5pt}
+	\subfigure[前景和背景物体的合成图像。前景是“聚焦”。]{\includegraphics[width=.35\columnwidth]{2022_11_30_0cbb01a33d99487fc27fg-084(1)}}
+	\caption{滚动球算法中使用的两种基本技术用于实现图形对象的任意空间旋转。a)用鼠标按黑色箭头指示的方向移动手，使物体绕位于屏幕平面上的轴$\vec{n}$旋转，即使赤道沿空心箭头方向旋转。b)小圈移动手，使物体绕屏幕平面法线旋转，方向与手的运动方向相反，再次旋转赤道沿空心箭头方向。}
+\end{figure}
+
+下面给出的滚动球算法的数学形式实际上是Chen等人(1988)在广泛调查方向控制方法中所研究的算法的一部分;我们的方法以Chen等人(1988)没有处理过的方式利用和扩展了算法的属性。滚动球应该被理解为一种新颖的、上下文无关的方法，它利用了通常以上下文相关的方式使用的已知旋转算法。
+
+
+下面的处理包括两个主要部分。第一部分介绍了如何使用滚动球法进行三维定位控制，以及如何在交互式图形系统中实现它。第二部分描述了如何将滚动球方法扩展到科学可视化中极为重要的其他转换组;滚动球法被看作是一个迷人的工具，在它自己的权利可视化变换组的性质。
+
+
+
+\subsection*{使用方法}
+为了理解这个方法的基本原理，假设一个球放在桌子上，在你手掌的水平下方。
+
+
+球绕任何与桌面平行的轴旋转时，都是通过手在垂直于轴的方向上水平移动，从而使球绕该轴旋转。注意，这个类的任何单一运动都不会产生围绕垂直轴的旋转，垂直于手掌的轴。
+
+
+然而，如果你把你的手平放在一个球的顶部，并在水平的小圆圈中移动你的手，球实际上会绕着垂直轴向相反的方向旋转。
+
+
+控制空间方向的滚动球算法是通过将要旋转的图形对象的方向作为球本身的方向来实现的，同时使用鼠标(或类似的二维输入设备)来模拟手掌的动作。
+
+
+通过执行鼠标(或手)的指示动作，可以使用滚动球算法在显示的图形对象上实现以下效果:
+
+
+\begin{itemize}
+
+\item 绕水平屏幕线或$x$-轴旋转，是通过相对于查看器向前或向后移动鼠标来实现的。
+
+
+\item 通过向左或向右移动鼠标，可以旋转垂直屏幕线或y轴。
+
+
+\item 绕屏幕平面上的对角线旋转，我们用向量$\vec{n}$表示其方向，通过垂直移动鼠标到$\vec{n}$来实现，就像手掌在绕轴$\vec{n}$旋转圆柱或球一样。
+
+
+\item 小的顺时针旋转垂直于屏幕，或z轴，通过移动鼠标在小的，逆时针的圆圈。更明显的旋转是通过使用更大的圆周运动来实现的。
+
+
+\item 小的逆时针旋转，垂直于屏幕是通过移动鼠标在小的，顺时针的圆圈。
+
+
+\item 围绕屏幕垂直方向的大旋转是通过向任何方向旋转对象$90^{\circ}$来实现的，围绕原始屏幕垂直轴旋转所需的量(现在位于屏幕平面上)，然后旋转$90^{\circ}$来恢复原始屏幕垂直轴的方向。这个动作本质上是一个大的长方形运动，与绕屏幕垂直旋转的小圆形运动形成对比。
+
+
+\end{itemize}
+
+图1总结了两个最基本的动作，绕屏幕平面上的轴$\vec{n}$旋转和绕屏幕垂直轴旋转。
+
+
+输入设备光标的位置与滚动球算法无关，在旋转操作期间，它通常对用户是不可见的。计算只需要先前和当前设备位置之间的差异，因此通常需要在每次移动后将鼠标弯曲到屏幕中央，以防止它离开交互窗口。因此，该方法是真正的上下文无关的，非常适合强调直接操作的用户界面。
+
+\subsection*{实现}
+滚动球算法是通过取一个给定的增量输入设备运动来定义一个在右屏幕坐标系中包含组件($dx, dy$)的向量来实现的。右旋轴$\vec{n}$被定义为位于屏幕平面上的垂直于输入设备运动的以下单位向量:
+
+
+\begin{align}
+\mathrm{n}_{\mathrm{x}}=\frac{-\mathrm{dy}}{\mathrm{dr}}, \quad \mathrm{n}_{\mathrm{y}}=\frac{+d \mathrm{x}}{\mathrm{dr}}, \quad \mathrm{n}_{\mathrm{z}}=0
+\end{align}
+
+这里我们定义了输入设备的位移$d r=\left(\mathrm{dx}^{2}+\mathrm{dy}^{2}\right)^{1 / 2}$。
+
+其次，引入了该算法的单一自由参数——有效滚动半径$R$，它决定了旋转角度对位移$d R$的灵敏度;如果$d r$只有几个像素，那么大约100的$ r$值是合适的。我们选择旋转角度为$\theta=\arctan (\mathrm{dr} / \mathrm{R}) \approx(\mathrm{dr} / \mathrm{R})$，使
+
+\begin{align}
+\begin{aligned}
+&\cos \theta=\frac{R}{\left(R^{2}+d r^{2}\right)^{1 / 2}} \\
+&\sin \theta=\frac{d r}{\left(R^{2}+d r^{2}\right)^{1 / 2}}
+\end{aligned}
+\end{align}
+
+绕轴$\vec{n}$旋转一个角度$\theta$的矩阵的一般形式是，其中$\vec{n} \cdot \vec{n}=1$，(参见M. Pique在Graphics Gems I, p. 446 [Glassner, 1990]中的“矩阵技术”):
+
+\begin{align}
+\left|\begin{array}{ccc}
+\cos \theta+\left(n_{x}\right)^{2}(1-\cos \theta) & n_{y} n_{x}(1-\cos \theta)-n_{z} \sin \theta & n_{x} n_{z}(1-\cos \theta)+n_{y} \sin \theta \\
+n_{y} n_{x}(1-\cos \theta)+n_{z} \sin \theta & \cos \theta+\left(n_{y}\right)^{2}(1-\cos \theta) & n_{y} n_{z}(1-\cos \theta)-n_{x} \sin \theta \\
+n_{z} n_{x}(1-\cos \theta)-n_{y} \sin \theta & n_{z} n_{y}(1-\cos \theta)+n_{x} \sin \theta & \cos \theta+\left(n_{z}\right)^{2}(1-\cos \theta)
+\end{array}\right|
+\end{align}
+
+
+将Eq.(2.3.1)中$\vec{n}$的值代入Eq.(2.3.3)，得到滚动球旋转矩阵
+
+\begin{align}
+\left|\begin{array}{ccc}
+\cos \theta+(d y / d r)^{2}(1-\cos \theta) & -(d x / d r)(d y / d r)(1-\cos \theta) & +(d x / d r) \sin \theta \\
+-(d x / d r)(d y / d r)(1-\cos \theta) & \cos \theta+(d y / d r)^{2}(1-\cos \theta) & +(d y / d r) \sin \theta \\
+-(d x / d r) \sin \theta & -(d y / d r) \sin \theta & \cos \theta
+\end{array}\right|
+\end{align}
+
+
+
+其中三角函数的值由式(2.3.2)给出。我们观察到:
+
+\begin{itemize}
+\item 在应用式(2.3.4)之前，必须将所有向量转换到所需的旋转中心。
+
+
+\item 旋转必须在一个单独的步骤中执行，如Eq.(2.3.4)。执行旋转作为一个序列，例如，首先绕$x$-轴，然后绕y轴，将给出一个完全不同的结果(尽管，由于微妙的原因，差异可能几乎是不可观察的)。
+
+
+\item 更改$\vec{n}$的整体符号将产生围绕对象的视点旋转，而不是视图内的对象旋转。小的顺时针的手运动将产生小的顺时针旋转的视点，但在视图中心的对象将继续逆时针旋转。这一现象源于群理论对身体固定旋转和空间固定旋转描述的符号差异(Whittaker, 1944)。
+
+\end{itemize}
+
+\subsection*{滚球法的推广}
+当我们分析滚动球法的群论背景时，各种相关的应用立即浮现出来。在这里，我们总结了普通旋转所涉及的基本群论，以及几个易于实现的扩展。这些技术对于许多科学可视化应用程序都很有用，包括建立关于一般群体的直觉。如果读者对群论没有兴趣，只是想知道如何实现和使用算法，就不必再读下去了。
+
+\subsection*{无穷小旋转的群论}
+涉及滚动球行为的基本群论(Edmonds, 1957)可以总结如下:如果我们定义$L_{i}, i=\{x, y, z\}$为旋转群$O$(3)的无穷小产生子，具有正旋转的右手约定，那么我们就有了对易关系
+
+\begin{align}
+\left[\mathrm{L}_y, \mathrm{L}_{\mathrm{z}}\right]=-\mathrm{L}_x, \\
+\left[\mathrm{L}_z, \mathrm{L}_{\mathrm{x}}\right]=-\mathrm{L}_y, \\
+\left[\mathrm{L}_x, \mathrm{L}_{\mathrm{y}}\right]=-\mathrm{L}_z,
+\end{align}
+其中我们使用了定义$[\mathrm{A}, \mathrm{B}]=\mathrm{AB}-\mathrm{BA}$。这些无穷小生成器可以表示为矩阵，也可以表示为这种形式的微分算子
+
+
+$$
+\mathrm{L}_{\mathrm{x}}=\mathrm{y} \frac{\partial}{\partial \mathrm{z}}-\mathrm{z} \frac{\partial}{\partial \mathrm{y}}
+$$
+
+和它的循环排列。方程式中的负号。(5-7)不是任意的，而是由我们的惯例决定的，$\mathrm{L}_{\mathrm{i}}$使用右手规则绕第i轴旋转一个向量。这个负号直接导致了观测到的反旋转，是旋转群性质的必然结果。
+
+
+\subsection*{四元数旋转，$2 \times 2$矩阵，和SU(2)旋量}
+滚动球变换用于定义四元数旋转(例如，参见Shoemake, 1985，或p - g的“使用四元数”)。Maillot在Graphics Gems I，第498页[Glassner, 1990])甚至比普通的空间旋转更自然。这是因为四元数公式等价于组SU(2)的更标准的$2 \times 2$矩阵表示法，SU(2)是通常旋转组O(3)的双重覆盖(Edmonds, 1957)。(尽管这两个基团对应完全不同的拓扑空间，但它们被滚动的球利用的无穷小性质是相同的。)
+
+
+为了利用滚动球进行SU(2)转动，我们用
+
+\begin{align}
+\mathrm{U}=I_{2} \cos \frac{\theta}{2}-i\vec{n} \cdot \vec{\sigma} \sin \frac{\theta}{2},
+\end{align}
+其中$I_{2}$是$2 \times 2$单位矩阵，$\vec{\sigma}$表示SU(2)服从循环关系$\sigma_x^{2}=1, \sigma_x \sigma_Y=i \sigma_z$的$2 \times 2$矩阵基。这相当于一个基于四元数的转换，其中$(c, u)=(\cos (\theta / 2)$， $\vec{n} \sin (\theta / 2)$)。注意，与完整矩阵Eq.(3)相比，Eq.(8)合并滚动球的基本参数要简单得多。
+
+更改$\vec{n}$的整体符号将产生围绕对象的视点旋转，而不是视图内的对象旋转。
+
+
+矩阵Eq.(8)的元素可以根据需要从Eq.(3)中计算一个普通的矢量旋转矩阵，也可以直接用作$2 \times 2$矩阵来旋转旋量(Edmonds, 1957)，这是旋转群所能作用的最基本对象。
+
+\subsection*{欧几里得四维}
+在四维欧氏空间中，0(4)群有6个转动自由度，而不是由于$0(3)$而在三维空间中存在的3个。
+
+
+6个$0(4)$旋转算子$\mathrm{L}_{\mu v}, \mu, v=\{1,2,3,4\}, L_{\mu v}=-L_{\mu v}$,可以通过定义以下组合分解为$O (3) \times 0 (3)$:
+
+\begin{align}
+L_{\mathrm{i}}^{\pm}=\frac{1}{2}\left(\frac{1}{2} \epsilon_{\mathrm{ijk}} L_{\mathrm{jk}} \pm L_{4 \mathrm{i}}\right) .
+\end{align}
+这里$\epsilon_{i j k}$是三维中的完全反对称张量，我们使用重复罗马指标从1到3求和的惯例。每一个组合都服从独立的$0(3)$变换关系，
+
+\begin{align}
+\left[L_{1}^{\pm}, L_{\mathrm{j}}^{\pm}\right]=-\epsilon_{\mathrm{ijk}} L_{\mathrm{k}}^{\pm}, \quad\left[L_{\mathrm{i}}^{\pm}, L_{\mathrm{j}}^{\mp}\right]=0,
+\end{align}
+因此可以使用$O(3)$滚动球算法单独控制。以这种方式产生的旋转可以写成
+
+\begin{align}
+R^{\pm}=I_{4} \cos \theta+\vec{n} \dot \vec{L}^{\pm} \sin \theta,
+\end{align}
+
+
+其中
+
+$$
+\vec{n} \cdot \vec{L} \pm=\left|\begin{array}{cccc}
+0 & -n_{z} & n_{y} & \mp n_{x} \\
+n_{z} & 0 & -n_{x} & \mp n_{y} \\
+-n_{y} & n_{x} & 0 & \mp n_{z} \\
+\pm n_{x} & \pm n_{y} & \pm n_{z} & 0
+\end{array}\right|,
+$$
+单位向量$\vec{n}$通常由式(1)定义。因此，我们可以使用滚动球的两个副本来操纵四维方向的所有自由度，一个为$\mathrm{L}_{1}^{+}$，一个为$\mathrm{L}_{\mathrm{i}}^{-}$。
+
+
+另一种方法也适用于N维欧氏空间中的旋转，它是将群$O(4)$(或$\mathrm{N}$中的$O(\mathrm{~N}$))分解为$O$(3)子群，并将每个子群视为独立的滚动球变换。
+
+\subsection*{洛伦兹变换}
+研究高速物理系统必须使用时空洛伦兹变换，而不是欧几里得旋转。洛伦兹变换将空间和时间混合在一起，保留了一个具有一个负分量的闵可夫斯基空间二次型。纯粹的速度变化，或“加速”，在形式上类似于用双曲函数取代三角函数的旋转。速度$\vec{v}=\hat{} v \tanh \xi$通过矩阵转换向量$(\vec{x},t)$
+\begin{align}
+\left|\begin{array}{cc}
+\delta_{i j}+\hat{v}_{i} \hat{v}_{j}(\cosh \xi-1) & \hat{v}_{j} \sinh \xi \\
+\hat{v}_{i} \sinh \xi & \cosh \xi
+\end{array}\right| .
+\end{align}
+
+为了实现$O(2,1)$洛伦兹转换(它保留了diag $(1,1,-1)$的形式)，我们将鼠标运动解释为“洛伦兹滚动球”在鼠标移动方向上的微小速度变化。(我们也可以研究物理时空的变换群$0(3,1)$；不幸的是，导致式(10)的论点的类比需要引入复向量。)
+
+
+$\mathrm{O}(2,1)$转换的无穷小生成器是boost操作符
+
+
+$$
+B_{\mathrm{x}}=t \frac{\partial}{\partial x}+x \frac{\partial}{\partial t}, \quad B_{y}=t \frac{\partial}{\partial y}+\mathrm{y} \frac{\partial}{\partial t} ,
+$$
+和操作符
+
+$$
+L=x \frac{\partial}{\partial y}-y \frac{\partial}{\partial x}
+$$
+
+在$x-y$面上产生旋转。boost算子在旋转下变换为普通向量，$\left[L, B_{x}\right]=-B_{y},\left[L, B_{y}\right]=+B_{x}$，而它们的相互交换产生的旋转符号与类似的$O(3)$算子，$\left[B_{x}, B_{y}\right]=+L$相反。
+
+
+我们将鼠标输入与$O(2,1)$转换Eq.(12)关联起来，将Eq.(1)替换为
+
+\begin{align}
+\hat{v}_x=\frac{+dx}{dr}, \quad \hat{v}_y=\frac{+dy}{dr}
+\end{align}
+
+选择boost参数为$\xi=\tanh ^{-1}(\mathrm{dr} / \mathrm{s}) \approx(\mathrm{dr} / \mathrm{s})$，其中's是一个合适的缩放因子，确保$(\mathrm{dr} / \mathrm{s})<1$。
+
+
+然后我们发现，在小的顺时针方向移动输入设备会产生顺时针方向坐标框架的空间部分的旋转，这与标准$O(3)$旋转的结果相反！这种效应被称为托马斯进动，使滚动球技术成为洛伦兹变换的一种非常自然的技术。
+
+
+\subsection*{总结}
+总之，滚动球技术提供了一种在交互式图形系统中使用二维输入设备控制三个转动自由度的方法，这种方法不依赖于输入设备的状态、位置或历史。由于算法丰富的群论起源，许多相关的科学可视化应用自然而然地出现了。要想熟练使用该技术，用户需要付出一些努力。但是，一旦掌握了这种方法，就会提供与情境无关的、探索性的方向调整，强烈支持直接操作的感觉。
+
+\subsection*{鸣谢}
+这项工作的一部分得到了美国国家科学基金会的资助。是- 8511751。
+
+See also G1, 462 .\\
+
+\newpage
+\section{区间运算}
+\begin{center}
+\small{
+Jon Rokne\\
+The University of Calgary\\
+Calgary, Alberta, Canada}
+\end{center}
+
+
+在计算机图形学中，离散化问题发生在两个不同的领域:
+
+\begin{itemize}
+\item 计算的最终输出是用有限分辨率的设备显示或打印的二维图像，这会造成诸如混叠等不良影响。
+
+
+\item 确定位置、强度和颜色所需的计算在通用计算设备或专用图形计算机中进行。在任何一种情况下，存储实数的基本方法都是所谓的浮点表示。这种表示为存储浮点数分配固定数目的二进制位数，浮点数可以是输入或输出量，也可以是中间计算的结果。
+
+\end{itemize}
+
+我们将讨论一种工具，区间分析，它使用有保证的上界和下界来估计和控制在数值计算中可能出现的数值误差，特别是在计算机图形问题中出现的数值误差。区间算术是一门涉及面很广的学科，我们只涉及到一些基本思想。然而，我们注意到区间算术和分析已经导致了基于包含和收缩的新技术的发展，这些技术适用于计算机图形学中的一些问题。
+
+
+我们首先给出一个可能发生在图形应用程序中的问题的例子。一个基本例程可能包括确定两条线(为了简单起见，在$E^{2}$中)是否平行(也就是说，它们是否有一个有限的交集)。如果它们相交，计算交点。让线条保持原样
+
+
+\begin{align}
+0.000100 x+1.00 y&=1.00 \\
+1.00 x+1.00 y&=2.00
+\end{align}
+假设这个算法是一个三位数四舍五入的算法。四舍五入到五位数的真正解是$x=1.0001$和$y=0.99990$，而使用Forsythe和Moler(1967)中描述的过程，三位数的算术给出$y=1.00， x=0.00$。在本文中，使用不同的计算顺序安排也得到了其他错误的结果。从这个例子可以看出，这样的计算可能有很大的误差，以致于一个应该在区域内的交集实际上可能被计算在区域外。
+
+另一个例子是区域填充，其中区域的连通性依赖于一个计算，该计算可能以与交叉计算相同的方式充满错误。
+
+这样的错误很难防范，最终它们会在计算机生成的场景中产生不受欢迎的工件，并且很难在大型程序中跟踪和纠正。
+
+其中许多误差可以使用区间算法自动控制。它使程序能够给出项目$p$和集合$P$的三个答案之一。
+
+
+\begin{enumerate}
+	\item $p$肯定在$P$中。
+
+
+\item $p$肯定不在$P$中。
+
+
+\item 在执行的计算和可用的精度中，不可能告诉$p \in P $或$p \notin P $，也就是说，结果是不确定的。
+\end{enumerate}
+
+根据前面的例子，我们可以说直线相交，它们不相交，或者它们是否相交是不确定的。类似地，我们可以声明一个域是连接的，它是没有连接的，或者域是否连接是不确定的。在每一种情况下，可以将决策程序内置于程序中以处理这三种情况。
+
+
+区间运算有着悠久的历史;然而，它的现代使用源于摩尔(1966)的《区间分析》一书的出版。后来，有大量的出版物专门讨论这个问题。Garloff出版了参考书目(1985,1987)，举行了一些会议，最近出版了一份新的苏联期刊，《区间计算》(新技术研究所，1991)，完全致力于区间分析。
+
+区间算术定义如下:设 $I=\{A: A=[a, b], a \cdot b$ $\in \mathrm{R}\}$为实紧区间集，设$A, B \in I$。然后区间算术运算定义为
+
+$$
+\mathrm{A} * \mathrm{~B}=\{\alpha * \beta: \alpha \in \mathrm{A}, \beta \in \mathrm{B}\} \text {, }
+$$
+其中 $* \in\{+,-, \cdot, /\}$（注意 / 在 $0 \in B$ 时未定义），即 $A * B$ 的区间结果包含所有可能的点结果 $\alpha * \beta$，其中 $\alpha$ 和 $\beta$ 是实数，使得 $\alpha \in A$ 和 $b\eta in B$ 和 $*$ 是基本的算术运算之一。
+
+这个定义是由下面的论证驱动的。给定两个区间$A$和$B$，我们知道它们分别包含精确的值$x$和$y$。然后定义保证$x * y \in A * B$中用于上述任何操作，即使我们不知道$x$和$y$的确切值。
+
+这个定义在实际计算中不是很方便。令$A=[a, b]$，且$ B=[c, d]$，可得其等价于
+
+\begin{align}
+\begin{aligned}
+{[a, b]+[c, d] } &=[a+c, b+d], \\
+{[a, b]-[c, d] } &=[a-d, b-c], \\
+{[a, b] \cdot[c, d] } &=[\min (a c, a d, b c, b d), \max (a c, a d, b c, b d)], \\
+{[a, b] /[c, d] } &=[a, b][1 / d, 1 / c] \text { if } 0 \sim[c, d],
+\end{aligned}
+\end{align}
+
+这意味着在$* \in\{+,-, \cdot, /\}$中的每个区间操作都被简化为真正的操作和比较。
+
+
+区间算术的一个重要性质是
+
+
+\begin{align}
+\begin{aligned}
+A, B, C, D \in A \subseteq B, C \subseteq D, \Rightarrow A_{\sqcup} * C C_{\sqcup} \subseteq B_{\sqcup} & * D \\
+& \text { for } * \in\{+,-, \cdot, /\}
+\end{aligned}
+\end{align}
+
+如果定义了操作。换句话说，如果$A$和$C$分别是$B$和$D$的子集，那么$A * C$是用于任何基本算术操作的$B * D$的子集。因此，在计算的任何阶段引入的错误，如浮点错误或输入错误，都可以被解释。由于式(4)的重要性，它被称为区间运算的包含等度。
+
+如果定义了操作。换句话说，如果$A$和$C$分别是$B$和$D$的子集，那么$A * C$是用于任何基本算术操作的$B * D$的子集。因此，在计算的任何阶段引入的错误，如浮点错误或输入错误，都可以被解释。由于式(4)的重要性，它被称为区间运算的包含等度。
+
+这样做的一个结果是，任何可编程的实计算都可以使用操作之间的自然对应关系嵌入到区间计算中，因此，如果$x \in X \in I$中，则$f(x) \in f(X)$中，其中$f(X)$被解释为$f(. x)$ ， $x$替换为$X$，操作替换为区间操作。
+
+间隔算术的另一个重要原理是，它可以在浮点计算机上实现，这样得到的间隔包含使用等式进行的真实间隔计算的结果。(3)和定向四舍五入。有几种软件系统可用于此目的，如PASCAL-SC (Bohlender et al.， 1981)。实现只需要注意间隔端点的每个计算都是从间隔的内部向外舍入。
+
+区间算术也有一些缺点:
+
+
+\begin{itemize}
+\item 减法和除法不是加法和乘法的逆运算。
+
+\item 分配律不成立。只有子分配律$\mathrm{a}(\mathrm{B}+$ C) $\subseteq \mathrm{AB}+\mathrm{AC}, \mathrm{a}, \mathrm{B}, \mathrm{C} \in\mathrm{I}$是有效的。
+
+\item 区间算术操作比相应的实际操作大约耗时3倍(尽管某些问题的区间算术实现可能比相应的实际版本运行得更快;参见suffn and Fackerell, 1991)。
+	
+
+
+\end{itemize}
+
+作为使用区间计算的一个简单例子，我们使用三位区间算术来考虑上面给出的相交线问题。根据克拉默法则，我们得到
+
+
+$$
+\mathrm{x}=\left|\begin{array}{cc}
+1.00 & 0.000100 \\
+2.00 & 1.00
+\end{array}\right| /\left|\begin{array}{cc}
+0.000100 & 1.00 \\
+1.00 & 1.00
+\end{array}\right|
+$$
+和
+$$
+\mathrm{y}=\left| \begin{array}{cc}
+0.000100 & 1.00 \\
+1.00 & 2.00
+\end{array}\right| / \left|\begin{array}{cc}
+0.000100 & 1.00 \\
+1.00 & 1.00
+\end{array}\right|.
+$$
+利用区间算法得到
+$$
+\mathrm{x} \in \mathrm{X}=[0.980,1.03]
+$$
+和
+$$
+\mathrm{y} \in \mathrm{Y}=[0.989,1.02],
+$$
+在每种情况下都包含精确解。这个计算与Forsythe和Moler(1967)引用的计算相比，在实际算术中对应更稳定的计算。如果这个特定的计算序列是在区间算术中执行的，那么间隔会更大，但在所有情况下，准确的结果都包含在结果的区间中。
+
+区间算术的一个有趣的特点是，它可以用来开发新的算法，而不是简单地扩展实际算术中的算法。其中一个例子是摩尔(1966)首先提出的区间牛顿法。假设给定$\mathrm{F}(\mathrm{x})$，并假设我们想要找到在给定区间$X_{0}$中$F(\xi)=0$的点$\xi$。然后定义区间牛顿法为迭代
+
+$$
+\mathrm{X}_{\mathrm{n}+1}=\mathrm{m}\left(\mathrm{X}_{\mathrm{n}}\right)-\mathrm{F}\left(\mathrm{X}_{\mathrm{n}}\right) / F^{\prime}\left(\mathrm{m}\left(\mathrm{X}_{\mathrm{n}}\right)\right), \quad \mathrm{n}=0,1, \ldots,
+$$
+其中$m([a ; b])=\left((a+b) / 2\right.$和$F^{\prime}(X)$是$F$的导数的区间求值。这个方法有一些有趣的性质。
+
+\begin{enumerate}
+\item 如果$F$的0 $\xi$存在于$X_{0^{\prime}}$中，则对于所有$n$， $\xi \in X_{n}$中;见Moore(1966)。这意味着初始$X_{0}$中的所有零都保留在后续的间隔中。
+
+\item 如果$X_{n^{\prime}}$对于某个$n$是空的，那么$F$在$X$中没有零(Moore, 1966)。
+
+\end{enumerate}
+
+方程解的区间迭代的进一步性质可以在neuaier(1990)中找到。
+
+该方法可应用于计算机图形学中的射线跟踪。隐式曲面和射线之间的交点计算会导致一个问题，即找到函数$\mathrm{F}(\mathrm{x})=0$的一个(最小)根或所有根(见Hanrahan, 1989)。通过使用区间算术技术，可以保证结果包含在生成的区间中，避免渲染过程中的异常(参见Kalra和Barr, 1989，关于该问题的讨论)。
+
+在Mudur和Koparkar(1984)以及summern和Fackerell(1991)中，我们发现了在隐式表面绘制中使用区间算法，在轮廓绘制算法和面度估计中使用区间算法的进一步讨论，其中它与细分技术相结合，以改善结果。
+
+See also G2, 394.
+
+
+\newpage
+\section{快速生成循环序列}
+\begin{center}
+\small{
+Alan W. Paeth\\
+NeuralWare Incorporated\\
+Pittsburgh, Pennsylvania}
+\end{center}
+
+自由运行的内部循环通常需要一系列重复每个$N$步骤的值或条件。例如，高速z -缓冲区绘制技术(Booth et al.， 1986)必须以三个周期执行缓冲区交换和内务管理。当$N$不是2的幂时，直接检查寄存器的低阶位可能不会被用来形成N的计数模。类似地，一个快速的二维N-gon生成器需要循环生成$N$的值序列，顶点$N$与顶点0相同。这个Gem考虑了$N<8$的紧凑方法，它使用的机器指令不超过三条，也不超过三个寄存器。不使用条件逻辑，使得该技术非常适合手工编码。
+
+Free-running inner-loops often require a sequence of values or conditions that repeat every $\mathrm{N}$ steps. For instance, a technique for high-speed Z-buffer drawing (Booth et al., 1986) must perform buffer swapping and housekeeping in cycles of three. When $\mathrm{N}$ is not a power of two, direct examination of a register's low order bits may not be used to form a count modulo N. Similarly, a fast 2-D N-gon generator requires the cyclic production of a sequence of $\mathrm{N}$ values, with vertex $\mathrm{N}$ identical to vertex zero. This Gem considers compact methods for $\mathrm{N}<8$ that use neither more than three machine instructions nor three registers. No conditional logic is employed, making the techniques well-suited to hand coding.
+
+\subsection*{$N=2$ (Review)}
+我们熟悉的双重“toggle”在true和false之间交替:
+
+
+\begin{align}
+\begin{aligned}
+&\text { condition := not(condition); } \quad \textit { True in alternating cases } \\
+&\text { if (condition) } . . .
+\end{aligned}
+\end{align}
+
+
+Similarly, a two-fold "cycle" of values is a simple alternation. When both values are predeterminated, one instruction and one integer register suffice:
+
+$$
+\begin{array}{ll}
+\text { register } a:=v 1 ; & \text { initialize } \\
+\text { constant } c:=v 1+v 2 ; & \\
+\text { repeat } & \text { cycle } \\
+%\quad a:=a-c ; & a:[v 1 \text { v2ن } \cdots]
+\quad a:=a-c ; & a:[v 1 \text { v2} \cdots]
+\end{array}
+$$
+
+For instance, Wirth (1973) speeds a prime number sieve by using (2.2) to generate the sequence $\left[\begin{array}{lllll}2 & 4 & 2 & 4 & \cdots\end{array}\right]$ of distances between successive odd integers not divisible by three (Knuth, 1981). Rewriting the arithmetic of (2.2) with logical xor operations yields a well-known, patented method for inverting a frame-buffer's pixels in alternating fashion. In arithmetic form, a pixel inversion scheme well-suited to greyscale frame buffers is rederived (Newman and Sproull, 1979).
+
+Most generally, the cyclic sequence is specified only at run time. For $\mathrm{N}=2$, cycling is swapping, easily accomplished in three arithmetic or logical operations without resort to a third holding register, as described in previous Gems by Paeth (1990) and Wyvill (1990), respectively.
+
+\subsection*{$N=3$ (Extension)}
+The pairwise swapping technique does not extend gracefully: Cyclic permutation of the sequence [a, b, c] by exchanging (for example) elements at locations $(1,2)$ and $(2,3)$ costs six instructions and three registers. A first-principles cyclic brigade method requires $\mathrm{N}+1$ registers and $\mathrm{N}+1$ assignments. Though straightforward, the latter still exceeds both the instruction and register limits set forth in the preface:
+
+$$
+\begin{aligned}
+& \text { r1 :=r1 xor r2; } \quad \text { r2 :=r2 xor r1; } \quad \text { rx }:=r 1 ; \quad r 1:=r 2 \text {; } \\
+& \text { r1 :=r1 xor r2; } \quad \text { r2:=r2 xor r3; <versus> } \quad r 2:=r 3 ; \quad r 3:=r x ; \\
+& \text { r3 }:=\text { r3 xor r2; } \quad \text { r2 }:=\text { r2 xor r3 }
+\end{aligned}
+$$
+
+Often, as in (2.1), values are required only to trigger a 1-in-N event. For $\mathrm{N}=3$, two registers and two lines suffice. Each register instruction is of the compact, two-op form $\ll r x=r x$ op ry $\gg$ :
+
+$$
+\begin{aligned}
+& \text { register r1 }:=0 ; \quad \text { Three fold trigger } \\
+& \text { register r2 :=1; } \\
+& \text { repeat cycle: }
+\end{aligned}
+$$
+
+This produces the tertiary (r1, r2) column set shown. The trigger occurs when a register is zero. Testing on r2 streamlines the operation under the
+
+\begin{center}
+\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-100}
+\end{center}
+
+\begin{center}
+\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-100(1)}
+\end{center}
+
+\section{II.5 FAST GENERATION OF CYCLIC SEQUENCES}
+assumption that hardware condition codes are set by the preceeding logical operations. The phase of the test may be adjusted by substituting a column other than the third in the initialization of ( $\mathrm{r} 1, \mathrm{r} 2)$. Triggering 2-in-3 times defines the complementary set: a test for nonzero is substituted. The three phase-distinct 1-in-3 tests may be done concurrently, forming a cyclic switch:
+
+$$
+\begin{array}{ll}
+\text { if } r=0 \text { then } \cdots & 1 \text {-in-3, phase }=0 \\
+\text { if } r l=r 2 \text { then } \cdots & 1 \text {-in-3, phase }=1 \\
+\text { if } r l=0 \text { then } \cdots & 1 \text {-in-3, phase }=2
+\end{array}
+$$
+
+The conditions and related blocks may be embedded among the xor operations to take advantage of implicit condition code sensing. That is, the two xor lines that implicitly define the modulo three counter need not be adjacent.
+
+Cyclic permutation of three variables in three registers can be done in the minimum number of instructions (three). The derivation is not obvious and relates the threefold arithmetic case described later.
+
+$$
+\begin{aligned}
+&\text { register int } a=c 1 ; \quad \text { Three fold cycle } \\
+&\text { register int } b=c 1 \text { xor } c 2 \text {; } \\
+&\text { constant int } c=c 1 \text { xor } c 2 \text { xor } c 3 \text {; }
+\end{aligned}
+$$
+
+$$
+\begin{aligned}
+& \text { repeat cycle: } \\
+& \mathrm{a}=\mathrm{a} \text { xor } \mathrm{b} \text {; } \\
+& \text { a: [c1 c2 c3...] } \\
+& \mathrm{b}=\mathrm{b} \text { xor } \mathrm{c} \text {; } \\
+& \mathrm{b}=\mathrm{b} \text { xor } \mathrm{a} \text {; }
+\end{aligned}
+$$
+
+The use of logical xor is valuable as the elements may be a mixed sequence of integers, pointers and floats; arithmetic operations would not permit this. Note that the last two lines both update the value in b, while register c is never written. This suggests the alternate line:
+
+$$
+\mathrm{b}:=\mathrm{b} \text { xor (a xor } \mathrm{c} \text { ) }
+$$
+
+in which $\mathrm{c}$ is equated to a predetermined compile time constant. However, the value must typically occupy a third register at run time. (See the C-code for a two register variant which produces the cycle [1, 2, 3].)
+
+
+When mere triggering is required, fixing $\mathrm{c}=0$ elides the middle line of the cycle, reconstructing the $\mathrm{N}=3$ triggering case. Alternately, the two lines may be regarded as the first two of three lines of the familiar xor swap code. Because the final line of the latter matches the first, three passes through the two-line xor code produce the same sequential action on the two registers as do two passes through the three-line code (this is suggested in Eq.(3.1a) by the grouping of instructions). Both define a restoring double swap: the identity operation on two elements in no less than six steps. Thus, the two-line code forms cycles of length three while generating the sequence $[\mathrm{r} 1, \mathrm{r} 1 \oplus \mathrm{r} 2, \mathrm{r} 2]$.
+
+\subsection*{$N=3,4,6$}
+
+Remarkably, cycles of length up to $\mathrm{N}_{\overline{5}} 6$ require only two registers. Clearly, there is insufficient storage for swapping of all elements, else a cyclic brigade of $\mathrm{N}+1$ registers and $\mathrm{N}+1$ assignments would suffice. Instead, the goal is to derive a set of values (on one or both registers) in which all generated values are distinct. Thus, the registers must "count," and rival first-principles code such as a quick hexagon-drawing routine:
+
+\section{Xval =X\_ Value\_ Table[(i := (i $+1 \bmod 6))]$; 
+ Yval = Y\_ Value\_ Table[i];}
+Here the modulus is a major expense: its cost is on par with integer division. The other first-principles method uses conditional logic to restart a decrementing counter, giving a large branch penalty on modern pipelined hardware, made worse by small N.
+
+As will be seen in (6.2), vertex production of 2-D hexagons may use this sixfold cycle:
+
+$$
+\begin{aligned}
+&\text { register } \mathrm{x}=\mathrm{y}=1 \text {; } \\
+&\text { repeat }
+\end{aligned}
+$$
+
+Xval = X\_coord $[\mathrm{x}:=\mathrm{x}+\mathrm{y}] ;$
+
+Yval = Y\_coord[y := $\mathrm{y}+\operatorname{not}(\mathrm{x})]$
+
+where $\operatorname{not}(\mathrm{x})$ is bit inversion, i.e., $\operatorname{not}(\mathrm{x})=\mathrm{x}$ xor $(-1)$ under two
+
+complement hardware. Arrays of length seven are required having suitable offsets, as seen in the companion C code.
+
+\subsection*{$N=\mathbf{6}$ Derivation}
+Nonuniform rotation may be modeled by functional composition. That is, $\mathrm{F}(\mathrm{F}$. . . $(\mathrm{F}([\mathrm{x}]))$. .. $)=[\mathrm{x}]$ in no less than $\mathrm{N}$ steps. For instance, the linear fractional function $F\left(x_{5}\right)_{\sqcup}\left[2 x_{\sqcup} l\right] /[x+1]$ yields $F^{6}(x)=x$ (Yale, 1975). Such forms may be equated directly to the algebra of $2 \times 2$ matrices (Birkhoff and MacLane, 1965); the former are treated preferentially for ease of derivation.
+
+The values of two registers may be represented by a point $[x, y]$ on an integer lattice, one coordinate per register. Treated as a (column) vector $\mathrm{v}$, the function $\mathrm{F}$ is a $2 \times 2$ matrix of which premultiplies $\mathrm{v}$. For a given $\mathrm{N}$, F must be determined such that $\mathrm{F}^{\mathrm{N}} \mathrm{v}=\mathrm{I}$. When $\mathrm{F}$ is a shear matrix rotation may be achieved in three shears (Paeth, 1986), requiring only one assignment statement per shear (p.182). When the off-diagonal matrix element is $\{\pm 1\}$, no multiplication occurs and one machine instruction suffices. All-rational forms also yield rotation, but the sets of circumferential points are not roots of unity (vertices of an $\mathrm{N}$-gon inscribed in a unit circle on the complex Cartesian plane). The one solution is for fourfold rotation. That decomposition is:
+
+$$
+\begin{array}{cc}
+0 & -1 \\
+1 & 0
+\end{array}=\begin{array}{cccccc}
+1 & 1 & 1 & 0 & 1 & 1 \\
+0 & 1 & -1 & 1 & 0 & 1
+\end{array} .
+$$
+
+Regrouping of the first and third matrix (p.192) allows a two-line rotation, useful on machines that provide an implicit multiplication by two:
+
+$$
+\begin{aligned}
+& \mathrm{x}:=\mathrm{x}+\mathrm{y} ; \quad \mathrm{x}:=\mathrm{x}+\left(2^{*} \mathrm{y}\right) ; \\
+& \mathrm{y}:=\mathrm{y}-\mathrm{x} ; \quad<0 \mathrm{x}>\quad \mathrm{y}:=\mathrm{y}=\mathrm{x} ; \\
+& \mathrm{x}:=\mathrm{x}+\mathrm{y} \text {; }
+\end{aligned}
+$$
+
+This sequential form is slightly more expensive than the compact $\{x=$ $\left.-y, y_{\bar{E}} \mathrm{x}\right\}$ form made possible when simultaneous reassignment of register values is possible, as in hardware. Rotations of three and six may
+
+be formed by finding the eigenvalues of the product of an $\mathrm{X}$ and $\mathrm{Y}$ shear in symbolic form and equating them with the roots of unity, thus determining the values of the two off-axis elements. In its most compact form, this yields the quadratic equation $z=\frac{1}{2}\left(m \pm \sqrt{m^{2}-4}\right)$, which can represent roots of unity $z^{N}=1$ for $N=\{1,2,3,4,6\}$, with the respective values $m=\{2,-2,-1,0,1\}$. Solution using MAPLE on the matrix equation $(\mathrm{XY})^{\mathrm{N}}=\mathrm{I}$ with symbolic matrix elements does not reveal real-valued, integral forms markedly distinct from this general solution:
+
+$$
+\begin{aligned}
+& (\mathrm{m}, \mathrm{N})=\{(-1,3),(0,4),(1,6)\}
+\end{aligned}
+$$
+
+Both three-and sixfold rotation using unit elements are thus possible. These are unexpected, given the irrationality of $\cos 60^{\circ}$. The distortion of the simplified two-shear rotational form has become a virtue in fixing vertices to integral locations. Note that the three nontrivial solutions for $\mathrm{N}=(3,4,6\}$ enumerate the set of $\mathrm{N}$-gons that tile the plane (Figs. 1a, 1b).
+
+An automated examination of all three-instruction, three-register shears having small multipliers was conducted. No solutions for new $\mathrm{N}$ were found, and most forms were not markedly distinct. The two-register\\
+\includegraphics[max width=\textwidth, center]{2022_11_30_0cbb01a33d99487fc27fg-104}
+
+Figure 1.
+
+\begin{center}
+\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-104(1)}
+\end{center}
+
+$\mathrm{N}=3$ form was rewritten using xor, leading to (3.3). The $\mathrm{N}=6$ two-register form was seen to accommodate one additional constant, which offsets the hexagon in $x$, illustrated in Fig. $1 b$ and presented algebraically below:
+
+When $\mathrm{c}=0$, the values in register a lag those in b by two steps, suggestive of a (cos $t, \sin t)$ generator, except the $90^{\circ}$ quadrature becomes a $120^{\circ}$ phase offset. With $c \neq 0$ the generation of a sequence of distinct values is achieved, meeting the original goal. Setting $\mathrm{c}=-1$ allows the implicit formation of the - $(\mathrm{a}+1)$ term using the logical ones complement (Paeth and Schilling, 1991), giving:
+
+$$
+\begin{aligned}
+& \mathrm{a}_{\bar{\Xi}}=\mathrm{b}_{\mathrm{s}}=1 ; \quad \text { six-fold fixed-ualue cycle } \\
+& \text { repeat } \\
+& \mathrm{a}:=\mathrm{a}+\mathrm{b} ; \quad \mathrm{a}:\left[\begin{array}{llllll}1 & 2 & 0 & -3 & -4 & -2\end{array}\right]
+\end{aligned}
+$$
+
+in which the c offset displaces the hexagon's center laterally, removing symmetry of central inversion. This helps achieve distinct values. With $\mathrm{a}>0, \mathrm{~b}>0$ and $2 \mathrm{c}>\mathrm{a}+\mathrm{b}$, the sequence in $\mathrm{a}$ is always positive.
+
+\subsection*{$\mathrm{N}=6$ (Triggering)}
+Arbitrary triggering is possible using the sixfold form. The distinct values of the preceding algorithm allow concurrent 1-in- $\mathrm{N}$ triggers having any phase offset. However, 2-in-N and 3-in- $\mathrm{N}$ forms with nonadjacent triggers present greater difficulty: They may not be created by replacing equality test with an inequality. This is a consequence of the figures' convexity: In geometric terms, a test such as y $>4$ represents a horizontal half-space of values. Intersection of the polygon by the plane splits it into two distinct boundary sets of conterminous vertices. The goal is a simple trigger that does not resort to intra-register bit testing as in the companion Gem cited above.
+
+Six states allow 64 trigger patterns, in which a "*" (".") in the ith place represents a (dis)arming of the trigger for the ith state. Elimination
+
+\begin{center}
+\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-105}
+\end{center}
+
+\begin{center}
+\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-105(1)}
+\end{center}
+
+\begin{center}
+\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-105(2)}
+\end{center}
+
+\section{II.5 FAST GENERATION OF CYCLIC SEQUENCES}
+of complementary patterns halves this number. Patterns containing repetitive triggers such as “**\textit{.." and “}...." may be decomposed into super or subcycles and are eliminated. Left are three prototypical patterns, having one, two, or three bits set. Testing uses the sixfold rotation variant in (6.2) with implicit $(c=-1)$ and starting values $a=b=0$ :
+
+$$
+\begin{array}{rlrrrrrr}
+\text { a: } & 0 & 0 & -1 & -2 & -2 & -1 \\
+\text { b: } & 0 & -1 & -1 & 0 & +1 & +1 \\
+\mathrm{a}=0 \text { AND b}= & 0: & * & \cdot & . & . & - & . \\
+\mathrm{a}= & 0: & * & . & * & . & . \\
+\mathrm{a}=0 \text { OR } \mathrm{b}= & 0: & * & * & . & * & .
+\end{array}
+$$
+
+The widespread use of xor suggests methods similar to pseudo-random number (RPN) generation on the field of integers $\bmod 1$ (see Morton, 1990). The traditional shift and carry-test logic hardware may be "wired" directly into three xor register instructions having a permuting form, giving
+
+$$
+\begin{aligned}
+& \text { repeat } \\
+& \mathrm{b}:=\mathrm{b} \text { xor } \mathrm{a} \text {; } \\
+& \mathrm{c}:=\mathrm{c} \text { Xorb; } \\
+%& \mathrm{a}:=\mathrm{a}_{\mathbf{प}} \text { रr } \text {; }
+& \mathrm{a}:=\mathrm{a}_{\mathbf{q}} 
+\end{aligned}
+$$
+
+This yields the table of values listed below.
+
+\begin{center}
+\begin{tabular}{lll}
+\hline
+$\mathrm{A}$ & $\mathrm{B}$ & $\mathrm{C}$ \\
+\hline
+$\mathrm{a}$ & $\mathrm{b}$ & $\mathrm{c}$ \\
+$\mathrm{a} \oplus \mathrm{b}$ & $\mathrm{b} \oplus \mathrm{c}$ & $\mathrm{a} \oplus \mathrm{b} \oplus \mathrm{c}$ \\
+$\mathrm{a} \oplus \mathrm{c}$ & $\mathrm{a}$ & $\mathrm{b}$ \\
+$\mathrm{c}$ & $\mathrm{a} \oplus \mathrm{b}$ & $\mathrm{b} \oplus \mathrm{c}$ \\
+$\mathrm{a} \oplus \mathrm{b} \oplus \mathrm{C}$ & $\mathrm{a} \oplus \mathrm{c}$ & $\mathrm{a}$ \\
+$\mathrm{b}$ & $\mathrm{c}$ & $\mathrm{a} \oplus \mathrm{b}$ \\
+$\mathrm{b} \oplus \mathrm{c}$ & $\mathrm{a} \oplus \mathrm{b} \oplus \mathrm{C}$ & $\mathrm{a} \oplus \mathrm{c}$ \\
+\hline
+\end{tabular}
+\end{center}
+
+Here column A leads B by two steps, likewise $B$ ahead of $C$, but $C$ leads A by three steps. Each column takes on all $\mathrm{N}_{5}-1$ possible arrangements of xor among the three variables, omitting the forbidden zero state. This does not restrict the periodic production of zero elements, formed either by setting any (but not all) of $\{a, b, c\}$ to zero, or by equating initial values in two registers, since $\mathrm{M}$ xor $\mathrm{M}=0$.
+
+Use of four registers $(r=4)$ suggests $2^{4}-1=15$ states. Since $r$ is even, $\mathrm{N}$ is composite with factors $\left(2^{2}+1\right)\left(2^{2} 2_{\sqcup}-1\right)$. This reveals the subcycle for $\mathrm{N}_{5}=5$, rounding out the table for small $\mathrm{N}$. However, this method shows only a marginal gain over the brigade method (five variables, one temporary register, six assignments) and was not explored. For those inclined to large $\mathrm{N}$, factors may be used to compose larger cycles: concurrent loops of relatively prime length resynchronize after a number of steps equal to the product (the GCM) of their lengths.
+
+For the last single-digit value, $\mathrm{N}=9$ remains difficult as it is neither prime nor a square-free composite. The next primes at $(11,13)$ are not of the $2^{\mathrm{m}}-1$ Mersenne form. By Fermat's theorem, they (and any prime p) are factors of $2^{p-1}$, here $2^{10}{ }^{1} 1$ and $2^{12}$. 1 . Since this implies that the number of registers grows at least linearly with the cycle length for xor methods, the brigade method wins by virtue of simplicity. Although the practical limit of all methods explored thus far is $\mathrm{N}<8$, more exotic and convoluted methods are possible and may be examined through brute-force means. One is presented below.
+
+\subsection*{$
+N=24
+$}
+
+As a last example, the code
+
+$$
+\begin{aligned}
+&\text { register } a=4 ; \\
+&\text { register } b=3 ; \\
+&\text { repeat }
+\end{aligned}
+$$
+
+$\mathrm{a}:=\mathrm{a}-\mathrm{b}$
+
+a := a bit-and 15; explicit limit on register a
+
+$\mathrm{b}:=\mathrm{b}$ xor $\mathrm{a} ;$
+
+offers a method of cycling modulo 24. Limiting the domain of register $a$ to 16 values necessarily introduces value multiplicity. The initial values
+
+chosen confine both $a$ and $b$ to the domain [1..15] and further insures that they are never simultaneously equal.
+
+This code's value is in forming parallel 24:1, 12:1, 8:1, and 6:1 rate division using the conditional tests $(b=1),(a=4),(b=7)$ and $(b=12)$, respectively. These tests are chosen so at most one is true at any step, allowing rate multiplication (up to 10-in-24) by combining the $\{1,2,3,4\}$ -in-24 tests by oring of the triggering bits. Note that only the 3-in-24 rate shows slight nonuniformity:
+
+a: $\begin{array}{llllllllllllllll}115 & 2 & 3 & 712 & 5 & 3 & 215 & 3 & 4 & 9 & 7 & 211151213 & 112 & 7 & 11 & 4\end{array}$
+
+\begin{center}
+\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-108}
+\end{center}
+
+%$\mathrm{b}_{\text {जiு }} 1: \quad *$
+$\mathrm{b}_{\text {w}} 1: \quad *$
+$\mathrm{a}=4:$
+
+$\mathrm{b}_{\bar{y}=7} 7$
+
+$\mathrm{b}_{\mathrm{y}=12:}$
+
+\begin{itemize}
+  \item 
+\end{itemize}
+
+$*$
+
+$\$$
+
+$x$
+
+$k$
+
+$*$
+
+\subsection*{Summary}
+Methods for cyclic production of both arbitrary values and of Boolean states has been presented. Cases $\mathrm{N}=\{2,3,4,6,7\}$ were treated in detail. The extensive C-code variants provided in the appendices make a useful set of additions to the graphics programmer's bag of tricks.
+
+See also G1, 436.
+
+\begin{center}
+\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-109}
+\end{center}
+
+\section*{A GENERIC PIXEL SELECTION }
+ MECHANISM\begin{center}
+\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-109(1)}
+\end{center}
+
+Reversing the colors of a frame buffer's pixels is a common way to highlight a region. A useful reversal function provides color pairs that are visually distinct. On newer hardware, lookup tables (which map a pixel's appearance) are keyed by window, introducing spatial dependence. This burdens the design of a "best" function. This gem offers a simple a priori solution that guarantees visually distinct color pairs, though their eventual appearance remains unknown to the algorithm. Typical use is in creating screen-wide, window-invariant tools, such as system cursors or selection rectangles for display "snapshots."
+
+A useful reversing function $F$ on pixel $p$ satisfies two algebraic criteria: $F(F(p))=p$ and $F(p) \mu$ p. The first assures that the function is its own inverse. The second is crucial in guaranteeing that the two elements in any color pair are "not nearly equal," leaving them visually distinct. For one-bit pixels, complementation (bit toggle) is the obvious solution. At higher precision, the (ones) complement of all bits becomes an arithmetic operation: $F(p)=\operatorname{not}(p)=-1-p$ under two's complement arithmetic (Paeth, 1991). This has been generalized (Newman and Sproull, 1979) for $0 \leq c<1$ as $F_{c}(p)=\operatorname{frac}(c-p)$. This fails the second criterion: For parameter c a pixel of value c/ 2 maps onto itself. Geometrically, the unit interval has been displayed (by c) and mirrored onto the original interval, thereby introducing a stationary point.
+
+The solution used in the Palette system (Higgins and Booth, 1986) returns to logical operations. Given a binary integer that defines discrete positions along an interval, bit complementation of merely the uppermost bit swaps the interval's lower and upper halves without any mirroring. The pixels in any color pair are now displaced by half the interval
+
+\section{II.6 A GENERIC PIXEL SELECTION MECHANISM}
+distance, guaranteeing distinct colors. In the case of color-mapped pixels (which serve as indices), elements in a pair are far removed in the domain of the mapping function, yielding colors likewise removed in the range should the color map define a monotonic function-a common case. Certain nonlinear non-Cartesian color maps (Paeth, 1991) also work well under this function and support a simple geometric interpretation.
+
+The generic function may now be constructed by making simple assumptions. The pixel precisions of monochromatic channels on typical framebuffers are one, four, or eight bits. The operation
+
+$$
+\text { macro bwpixflip }(\mathrm{x}) \quad \mathrm{x}:=\mathrm{x} \text { bit-xor } 133 \text { hex } 85
+$$
+
+complements the topmost bit in all cases without knowledge of the precision in use. When the underlying pixel is of lower precision, toggling the higher-order bits is of no consequence or is squelched by action of a hardware write mask. Conversely, operation upon a high precision, pixel will complement additional low-precision bits, but these are sufficiently removed to be of much consequence.
+
+For RGB pixels, three copies of hexadecimal 85 assures operation on three adjacent channels. This also introduces a toggle at bit 12, a further benefit on hardware providing extended monochromatic precision or color table indexing. The generic color reverse function is
+
+$$
+\text { macro pixelflip(x) } \quad \mathrm{x}:=\mathrm{x} \text { bit-xor } 8750469 \text { hex } 858585
+$$
+
+Threefold use of the operation swaps halves of the unit interval along each color axis. Geometrically, this represents a shuffling of eight subcubes within the unit color cube about the central point $\left(\frac{1}{2} \frac{1}{2} \frac{1}{2}\right)$ of midlevel gray. In non-Rubik fashion, the orientation of each cubelet is preserved (fig. 1a). In the first-principles "xor - 1" case (not shown) an additional central inversion of the eight cubelets inverts the entire solid and the undesirable stationary point is reintroduced at the mid-gray position.
+
+Finally, it is often advantageous to leave the blue channel uncomplemented. When blue occupies the uppermost pixel bits (as on the Adage/ Ikonas or SGI/ Iris), complementation of the lower 16 bits defining the red and green channels still occurs; all monochromatic and lookup cases (in which pixel precision never exceeds 16 bits) are also
+
+\section{II.6 A GENERIC PIXEL SELECTION MECHANISM}
+\begin{center}
+\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-111}
+\end{center}
+
+Figure 1
+
+covered implicitly. The alternate generic macro is
+
+$$
+\text { macro pixelflip2(x) } \quad \mathrm{x}:=\mathrm{x} \text { bit-xor } 34181 \text { hex } 8585
+$$
+
+For 24-bit color, preservation of blue means that subcubes no longer swap through central inversion (Fig. la), but are instead rotated a half-turn about the blue axis in "Ferris-wheel" fashion (lb). This creates a pair of opponent colors (red, green) for which the human visual system is highly responsive, plus pairs (blue, white), (cyan, magenta) and (yellow, black). The alternate macro supports the use of short, 16-bit integers in the reversal.
+
+See also G1, 215; G1, 219; G1, 233; G1, 249.
+
+\section{NONUNIFORM RANDOM POINT SETS VIA WARPING}
+\begin{center}
+\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-112}
+\end{center}
+
+We often want to generate sets of random or pseudorandom points on the unit square for applications such as distribution ray tracing. There are several methods for doing this, such as jittering and Poisson disk sampling. These methods give us a set of $\mathrm{N}$ reasonably equidistributed points on the unit square: $\left(u_{1}, v_{1}\right)$ through $\left(u_{N^{\prime}}, v_{N}\right)$.
+
+Sometimes, our sampling space may not be square (e.g., a circular lens) or may not be uniform (e.g., a filter function centered on a pixel). It would be nice if we could write a mathematical transformation that would take our equidistributed points $\left(\mathrm{u}_{\mathrm{i}}, \mathrm{v}_{\mathrm{i}}\right)$ as input, and output a set of points in our desired sampling space with our desired density. For example, to sample a camera lens, the transformation would take $\left(\mathrm{u}_{\mathrm{i}}, \mathrm{v}_{\mathrm{i}}\right)$ and output $\left(r_{i}, \theta_{i}\right)$ such that the new points were approximately equidistributed on the disk of the lens.
+
+It turns out that such transformation functions are well known in the field of Monte Carlo integration. A table of several transformations useful for computer graphics is given in Table I. The method for generating such transformations is discussed for the rest of this article. Note that several of these transformations can be simplified for simple densities. For example, to generate directions with a cosine distribution, use the Phong density with $\mathrm{n}=1$. To generate points on the unit hemisphere, use the sector on the unit sphere density with $\theta_{1},=0, \theta_{2}=\pi / 2, \varphi_{1}=0$, and $\varphi_{2}=\pi$.
+
+For Monte Carlo methods we must often generate random points according to some probability density function, or random rays according to a directional probability density. In this section a method for one and two dimensional random variables is described. The discussion closely follows that of Shreider (1966).
+
+\section{II.7 NONUNIFORM RANDOM POINTS VIA WARPING}
+Table 1. Some Useful Transformation. ${ }^{a}$.
+
+\begin{center}
+\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-113}
+\end{center}
+
+a The symbols $u, v$, and $w$ represent instances of uniformly distributed random variables ranging over [0, 1].
+
+If the density is a one-dimensional $\mathrm{f}(\mathrm{x})$ defined over the interval $\mathrm{x} \in[\mathrm{a}, \mathrm{b}]$, then we can generate random numbers $\alpha_{\mathrm{i}}$ that have density $\mathrm{f}$ from a set of uniform random numbers $\xi_{\mathrm{i}}$, where $\xi_{\mathrm{i}} \in[0,1]$. To do this we need the probability distribution function $\mathrm{F}(\mathrm{x})$ :
+
+$$
+F(x)=\int_{a} f\left(x^{\prime}\right) d \mu\left(x^{\prime}\right)
+$$
+
+\section{II.7 NONUNIFORM RANDOM POINTS VIA WARPING}
+To get $\alpha_{\mathrm{i}}$ we simply transform $\xi_{\mathrm{i}}$ :
+
+$$
+\alpha_{\mathrm{i}}=\mathrm{F}^{-1}\left(\mathrm{x}_{\mathrm{i}}\right) \text {, }
+$$
+
+where $\mathrm{F}^{-1}$ is the inverse of $\mathrm{F}$. If $\mathrm{F}$ is not analytically invertible, then numerical methods will suffice because an inverse exists for all valid probability distribution functions.
+
+If we have a two-dimensional density $(\mathrm{x}, \mathrm{y})$ defined on [a, b: c, d], then we need the two-dimensional distribution function:
+
+$$
+F(x, y)=\int_{c}^{y} \int_{a}^{\prime} f\left(x^{\prime}, y^{\prime}\right) d \mu\left(x^{\prime}, y^{\prime}\right) .
+$$
+
+We first choose an $\mathrm{x}_{\mathrm{i}}$ using the marginal distribution $\mathrm{F}(\mathrm{x}, \mathrm{d})$, and then choose $y_{i}$ according to $F\left(x_{i}, y\right) / F\left(x_{i}, d\right)$. If $F(x, y)$ is separable (expressable as $g(\mathrm{x}) \mathrm{h}(\mathrm{y}))$, then the one-dimensional techniques can be used on each dimension.
+
+As an example, to choose reflected ray directions for zonal calculations or distributed ray tracing, we can think of the problem as choosing points on the unit sphere or hemisphere (since each ray direction can be expressed as a point on the sphere). For example, suppose that we want to choose rays according to the density
+
+$$
+\mathrm{p}(\theta, \varphi)=\frac{\mathrm{n}+1}{2 \pi} \cos ^{\mathrm{n}} \theta,
+$$
+
+where $\mathrm{n}$ is a Phong-like exponent; $\theta$ is the angle from the surface normal and $\theta \in[0, \pi / 2]$ (is on the upper hemisphere); and $\varphi$ is the azimuthal angle $(\varphi \in[0,2 \pi])$. The distribution function is
+
+$$
+\mathrm{P}(\theta, \varphi)=\int_{0}^{\varphi} \int_{0}^{\theta} \mathrm{p}\left(\theta, \varphi^{\prime}\right) \sin \theta \mathrm{d} \theta \mathrm{d} \varphi^{\prime} .
+$$
+
+The $\sin \theta$ term arises because $\mathrm{d} \omega=\sin \theta \mathrm{d} \theta \mathrm{d} \varphi$ on the sphere. When the marginal densities are found, $p$ (as expected) is separable, and we find that a $\left(r_{1}, r_{2}\right)$ pair of uniform random numbers can be transformed to a direction by
+
+$$
+(\theta, \varphi)=\left(\arccos \left(\left(1-r_{1}\right)^{1 /(n+1)}\right), 2 \pi r_{2}\right) .
+$$
+
+\section{II.7 NONUNIFORM RANDOM POINTS VIA WARPING}
+Typically, we want a directional $(\theta, \varphi)$ pair to be with respect tosomeunit vector $\mathrm{y}$ (as opposed to the $\mathrm{z}$ axis). To do this we can first convert the angles to a unit vector a:
+
+$$
+\mathrm{a}=(\cos \varphi \sin \theta, \sin \varphi \sin \theta, \cos \theta) .
+$$
+
+We can then transform a to be an a' with respect to $\psi$ by multiplying a by a rotation matrix $\mathrm{R}\left(\mathrm{a}^{\prime}=\mathrm{Ra}\right.$ ). This rotation matrix is simple to write down:
+
+$$
+R=\begin{array}{lll}
+u_{x} & v_{x} & w_{x} \\
+u_{y} & v_{y} & w_{y} \\
+u_{z} & v_{z} & w_{z}
+\end{array}
+$$
+
+where $u=\left(u_{x^{\prime}} u_{y^{\prime}} u_{z}\right), v=\left(v_{x^{\prime}} v_{y^{\prime}} v_{z}\right), w=\left(w_{x^{\prime}} w_{y^{\prime}}, w_{z}\right)$, form a basis (an orthonormal set of unit vectors where $u=\mathrm{v} \times \mathrm{w}, \mathrm{v}=\mathrm{w} \times \mathrm{u}$, and $\mathrm{w}=\mathrm{u} \times \mathrm{v}$ ) with the constraint that $\mathrm{w}$ is aligned with $\psi$ :
+
+$$
+\mathrm{w}=\frac{\psi}{|\psi|} .
+$$
+
+To get $u$ and $v$, we need to find a vector $t$ that is not colinear with $w$. To do this simply set $t$ equal to $\mathrm{w}$ and change the smallest magnitude component of $\mathrm{t}$ to one. The $\mathrm{u}$ and $\mathrm{v}$ follow easily:
+
+$$
+\begin{aligned}
+&\mathrm{u}=\frac{\mathrm{t} \times \mathrm{w}}{|\mathrm{t} \times \mathrm{w}|}, \\
+&\mathrm{v}=\mathrm{w} \times \mathrm{u} .
+\end{aligned}
+$$
+
+This family of techniques is very useful for many sampling applications. Unfortunately, some sampling spaces (e.g., the surface of a dodecahedron) are not naturally dealt with using the methods in this gem. Special purpose or, as a last resort, rejection techniques are then called for.
+
+See also G1, 438.
+
+\begin{center}
+\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-116}
+\end{center}
+
+\section{CROSS PRODUCT IN FOUR DIMENSIONS AND BEYOND}
+\begin{center}
+\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-116(1)}
+\end{center}
+
+\section{Introduction}
+Cross product is one of the gods' great gifts to mankind. It has many applications in mathematics, physics, engineering, and, of course, computer graphics. Normal vectors, rotations, curl, angular momentum, torque, and magnetic fields all make use of the cross product.
+
+Given two linearly independent vectors $\mathrm{u}$ and $\mathrm{v}$ in three dimensions, their cross product is the vector $u \times v$ perpendicular to the plane of $u$ and $\mathrm{v}$, oriented according to the right-hand rule, with length equal to $|\mathrm{u}||\mathrm{v}| \sin \theta$, where $\Theta$ is the angle between $u$ and $v$. In rectangular coordinates, the cross product can be computed from the simple determinant formula
+
+$$
+u \times v=\left|\begin{array}{ccc}
+\mathbf{i} & \mathbf{j} & \mathbf{k} \\
+\mathrm{u}_{1} & \mathrm{u}_{2} & \mathrm{u}_{3} \\
+\mathrm{v}_{1} & \mathrm{v}_{2} & \mathrm{v}_{3}
+\end{array}\right| .
+$$
+
+Equivalently,
+
+$$
+u \times v=\left(u_{2} v_{3}-u_{3} v_{2}, u_{3} v_{1}-u_{1} v_{3^{\prime}} u_{1} v_{2^{\prime}}-u_{2} v_{1}\right) \text {. }
+$$
+
+At first glance, cross product seems to be an artifact of three dimensions. In three dimensions the normal direction to the plane determined by two vectors is unique up to sign, but in four dimensions there are a whole plane of vectors normal to any given plane. Thus, it is unclear how to define the cross product of two vectors in four dimensions. What then
+
+\section{II.8 CROSS PRODUCT IN FOUR DIMENSIONS AND BEYOND}
+is the analogue of the cross product in four dimensions and beyond? The goal of this gem is to answer this question.
+
+\section{Tensor Product}
+There is a way to look at the cross product that is more instructive than the standard definition and that generalizes readily to four dimensions and beyond. To understand this approach, we need to begin with the notion of the tensor product of two vectors $u$, v.
+
+The tensor product $u \otimes v$ is defined to be the square matrix
+
+$$
+\mathrm{u} \otimes \mathrm{v}=\mathrm{u}^{\mathrm{t}} * \mathrm{v},
+$$
+
+where the superscript $\mathrm{t}$ denotes transpose and $*$ denotes matrix multiplication. Equivalently,
+
+$$
+(u \otimes v)_{i j}=\left(u_{i}, v_{j}\right) .
+$$
+
+Notice that for any vector $\mathrm{w}$,
+
+$$
+\mathrm{w}(\mathrm{u} \otimes \mathrm{v})=(\mathrm{w} \cdot \mathrm{u}) \mathrm{v} .
+$$
+
+Thus, the tensor product is closely related to the dot product.
+
+Like dot product, the tensor product makes sense for two vectors of arbitrary dimension. Indeed, the tensor product shares many of the algebraic properties of the dot product. However, unlike the dot product, the tensor product is not communative. That is, in general,
+
+$$
+u \otimes v \neq v \otimes u \quad \text { because } u_{i} v_{j} \neq u_{j} v_{i}
+$$
+
+Applications of the tensor product of two vectors to computer graphics are given in Goldman (1990, 1991).
+
+\section{Wedge Product}
+The wedge product of two vectors $u$ and $v$ measures the noncommutativity of their tensor product. Thus, the wedge product $u \wedge v$ is the square
+
+\section{II.8 CROSS PRODUCT IN FOUR DIMENSIONS AND BEYOND}
+matrix defined by
+
+$$
+u \wedge v=u \otimes v-v \otimes u .
+$$
+
+Equivalently,
+
+$$
+(u \wedge v)_{i j}=\left(u_{i} v_{j}-u_{j} v_{i}\right) .
+$$
+
+Like the tensor product, the wedge product is defined for two vectors of arbitrary dimension. Notice, too, that the wedge product shares many properties with the cross product. For example, it is easy to verify directly from the definition of the wedge product as the difference of two tensor products that:
+
+$\mathrm{u} \wedge \mathrm{u}=0$,
+
+$\mathrm{u} \wedge \mathrm{v}=-\mathrm{v} \wedge \mathrm{u}$
+
+(anticommutative),
+
+$\mathrm{u} *(\mathrm{v} \wedge \mathrm{w}) \neq(\mathrm{u} \wedge \mathrm{v}) * \mathrm{w}^{\mathrm{t}}$
+
+(nonassociative),
+
+$\mathrm{u} \wedge \mathrm{cv}=\mathrm{c}(\mathrm{u} \wedge \mathrm{v})=(\mathrm{cu}) \wedge \mathrm{v}$,
+
+$\mathrm{u} \wedge(\mathrm{v}+\mathrm{w})=\mathrm{u} \wedge \mathrm{v}+\mathrm{u} \wedge \mathrm{w}$
+
+(distributive),
+
+$\mathrm{u} *(\mathrm{v} \wedge \mathrm{w})+\mathrm{v} *(\mathrm{w} \wedge \mathrm{u})+\mathrm{w} *(\mathrm{u} \wedge \mathrm{v})=0$
+
+(Jacobi identity),
+
+$\mathrm{r} *(\mathrm{u} \wedge \mathrm{v}) * \mathrm{~s}^{\mathrm{t}}=(\mathrm{r} \cdot \mathrm{u})(\mathrm{s} \cdot \mathrm{v})-(\mathrm{r} \cdot \mathrm{v})(\mathrm{s} \cdot \mathrm{u})$
+
+(Lagrange identity).
+
+The wedge product also shares some other important properties with the cross product. The defining characteristics of the cross product are captured by the formulas
+
+$$
+\begin{gathered}
+u \cdot(u \times v)=v \cdot(u \times v)=0, \\
+|u \times v|=|u|^{2}|v|^{2} \sin ^{2} \Theta .
+\end{gathered}
+$$
+
+By the Lagrange identity, the wedge product satisfies the analogous
+
+\section{II.8 CROSS PRODUCT IN FOUR DIMENSIONS AND BEYOND}
+identities:
+
+$$
+\begin{aligned}
+&\mathrm{u} *(\mathrm{u} \wedge \mathrm{v}) * \mathrm{u}^{\mathrm{t}}=\mathrm{v} *(\mathrm{u} \wedge \mathrm{v}) * \mathrm{v}^{\mathrm{t}}=0, \\
+&\mathrm{u} *(\mathrm{u} \wedge \mathrm{v}) * \mathrm{v}^{\mathrm{t}}=(\mathrm{u} \cdot \mathrm{u})(\mathrm{v} \cdot \mathrm{v})-(\mathrm{u} \cdot \mathrm{v})^{2}=\left.\left.|\mathrm{u}|\right|^{2} \mathrm{v}\right|^{2} \sin ^{2} \Theta
+\end{aligned}
+$$
+
+A variant of the last identity can be generated by defining the norm of a matrix $M$ to be
+
+$$
+|M|^{2}={ }_{2}^{1} \sum_{i j}\left(M_{i j}\right)^{2} .
+$$
+
+Then by direct computation it is easy to verify that
+
+$$
+|u \wedge v|^{2}=(u \cdot u)(v \cdot v)-(u \cdot v)^{2}=|u|^{2}|v|^{2} \sin ^{2} \Theta .
+$$
+
+In addition, the cross product identity
+
+$$
+(\mathrm{u} \times \mathrm{v}) \times \mathrm{w}=(\mathrm{w} \cdot \mathrm{u}) \mathrm{v}-(\mathrm{w} \cdot \mathrm{v}) \mathrm{u}
+$$
+
+has the wedge product analogue
+
+$$
+\mathrm{w} \cdot(\mathrm{u} \wedge \mathrm{v})=(\mathrm{w} \cdot \mathrm{u}) \mathrm{v}-(\mathrm{w} \cdot \mathrm{v}) \mathrm{u} .
+$$
+
+The cross product can be used to test for vectors perpendicular to the plane of $u$ and $v$ because
+
+$$
+\mathrm{w} \times(\mathrm{u} \times \mathrm{v})=0 \Leftrightarrow \mathrm{w} \perp \mathrm{u}, \mathrm{v} .
+$$
+
+Similarly, the wedge product recognizes vectors perpendicular to the plane determined by $u$ and $v$ because by (1),
+
+$$
+\mathrm{w} *(\mathrm{u} \wedge \mathrm{v})=0 \Leftrightarrow(\mathrm{w} \cdot \mathrm{u})=(\mathrm{w} \cdot \mathrm{v})=0 \Leftrightarrow \mathrm{w} \perp \mathrm{u}, \mathrm{v} .
+$$
+
+Moreover, in three dimensions,
+
+$$
+u \Lambda v=\left|\begin{array}{ccc}
+0 & u_{1} v_{2}-u_{2} v_{1} & u_{1} v_{3}-u_{3} v_{1} \\
+u_{2} v_{1}-u_{1} v_{2} & 0 & u_{2} v_{3}-u_{3} v_{2} \\
+u_{3} v_{1}-u_{1} v_{3} & u_{3} v_{2}-u_{2} v_{3} & 0
+\end{array}\right|
+$$
+
+\section{II.8 CROSS PRODUCT IN FOUR DIMENSIONS AND BEYOND}
+Thus, in three dimensions the entries of the wedge product matrix $u \wedge v$ are, up to sign, the same as the components of the cross product vector $\mathrm{u} \times \mathrm{v}$. This observation explains why wedge product and cross product share so many algebraic properties.
+
+In three dimensions we are really very lucky. The matrix $u \wedge v$ is antisymmetric so, up to sign, it has only three unique entries. This property allows us to identify the matrix $u \wedge v$ with the vector $u \times v$. Nevertheless, there is something very peculiar about the vector $u \times v$. If $\mathrm{u}$ and $\mathrm{v}$ are orthogonal unit vectors, then the vectors $u, v, u \times v$ form a right-handed coordinate system. But if $\mathrm{M}$ is the linear transformation that mirrors vectors in the $u, v$ plane, then $\{u \cdot M, v \cdot M,(u \times v) \cdot M\}=$ $\{u, v,-u \times v\}$ forms a left-handed coordinate system. Thus, (u $\cdot M) \times$ $(\mathrm{v} \cdot \mathrm{M}) \neq(\mathrm{u} \times \mathrm{v}) \cdot \mathrm{M}$, so $\mathrm{u} \times \mathrm{v}$ does not really transform as a vector. This anomaly should alert us to the fact that cross product is not really a true vector. In fact, cross product transforms more like a tensor than a vector.
+
+In higher dimensions we are not nearly so lucky. For example, in four dimensions the antisymmetric matrix $u \wedge v$ has, up to sign, six, not four, distinct entries. Thus, the matrix $u \wedge v$ cannot be identified with a four-dimensional vector. In $\mathrm{n}$ dimensions, the antisymmetric matrix $\mathrm{u} \wedge \mathrm{v}$ has $n(n-1) / 2$ unique entries. But $n(n-1) / 2 \neq n$ unless $n=0,3$. Thus, only in three dimensions can we identify the wedge product of two vectors with a vector of the same dimension. In general, the wedge product is an antisymmetric 2-tensor. This antisymmetric tensor shares many of the important algebraic properties of the cross product, and thus it is a natural generalization of the cross product to four dimensions and beyond.
+
+\section{Acknowledgment}
+I would like to thank Joe Warren for pointing out that the formula for the length of the cross product $u \times v$ has a direct analogue in the formula for the norm of the wedge product $u \wedge v$.
+
+
+\begin{center}
+\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-121}
+\end{center}
+
+In the early days of Computer Graphics, straight line rasterization was developed to render segments onto the raster plane. Later, three-dimensional segment discretization had to be developed to keep track of the path of a ray in the object space. These algorithms generate a connected sequence that represents the segment in the discrete space; moreover, they define a path in which the directions are uniformly distributed. An extension to higher-dimensional spaces is suited for applications ranging from line generation in a time-space coordinate system to the incremental generation of a discrete simultaneous linear interpolation of any number of variables.
+
+This gem presents an algorithm that generates a face-connected line segment in discrete n-dimensional spaces. In two dimensions, the algorithm introduced below coincides with any classical 4-connected straight line drawing algorithm. Among all discrete segments joining two points, this algorithm produces one in which the directions are uniformly distributed. A definition of uniform distribution is given below.
+
+Consider an n-dimensional lattice, or hyperlattice, i.e., the set of all points $\mathrm{P}=\left(\mathrm{p}_{0}, \mathrm{p}_{1}, \ldots, \mathrm{p}_{\mathrm{n}-1}\right)$ of $\mathbf{Z}^{\mathrm{n}}$ : Neighbourhood relations can be defined between the Voronoi hypervroxel associated with each point of the hyperlattice. In fact, only voxels having a hyperface in common, i.e., corresponding to hyperlattice points having $\mathrm{n}-1$ coordinates in common, will be considered here as neighbours. In a two-dimensional lattice, such neighbourhood relation is the well-known 4 -connection, while in the three-dimensional space it leads to 6-connection. The neighbourhood relations among the hyperlattice points introduce a rasterization proce- dure for curves into the hyperlattice: A rasterization of a curve is in fact a path of neighbouring lattice points.
+
+Consider two hyperlattice points $P=\left(p_{0^{\prime}}, p_{1}, \ldots, p_{n-1}\right)$ and $Q=$ $\left(q_{0^{\prime}} q_{1}, \ldots, q_{n-1}\right)$. Let $n_{i}=\left|q_{i}-p_{i}\right|$ Then a face-connected shortest path between $\mathrm{P}$ and $\mathrm{Q}$ requires $\mathrm{m}=\sum \mathrm{n}_{\mathrm{i}}$ steps. The hyperline points are the points of coordinates $x_{i}=\left(q_{i}-p_{i}\right) t+p_{i}$, with $t \in[0,1]$. The parameter $t$ introduces an ordering on the points of the straight line. Consider the straight line points $P_{i, h_{1}}$ obtained for $t=h_{i} / n_{i}$, where $h_{j}=1, \ldots, n_{i}$, and order them in increasing order of their corresponding parameter value. Whenever an ambiguity occurs, and two parameter values $h_{\mathrm{j}} / \mathrm{n}_{\mathrm{i}}$ and $h_{\mathrm{j}} / \mathrm{n}_{\mathrm{j}}$ coincide, an arbitrary order has to be chosen. In other words, the segment $\mathrm{PQ}$ is subdivided into $\mathrm{n}_{\mathrm{i}}$ parts for each dimension i, and the points obtained on the straight line segment are ordered by increasing values of the parameter t. When two subdivision points coincide, the one corresponding to the smaller dimension is considered to precede the other one.
+
+The resulting set is a finite ordered set of the segment points $P_{i, h_{i}}$, which can be renamed as $A_{0^{\prime}} A_{1}, \ldots, A_{m-1}$ Consider the finite path built by taking the sequence of directions $\left\{a_{k}\right)_{k=0, \ldots, m-1}$, such that each direction $a_{k}$ corresponds to the point $A_{k}=P_{a_{k}, 1}$, for some l. Such a path is said to be uniformly distributed with respect to the directions that constitute it. It is clear that in such a path the occurrences of the different directions that have to appear in it are as evenly spaced as possible in the chain. Moreover, if we follow the previously defined path from the point $\mathrm{P}$, the point $\mathrm{Q}$ shall be reached.
+
+Whenever the hyperface-connected rasterization onto the n-dimensional hyperlattice of a straight line segment joining two hyperlattice points is computed, the result is a hyperface-connected path joining the two points. This path is uniformly distributed among all directions. A simplified version of the routing algorithm can be therefore summarized as follows. For each direction $i$, an integer counter $d_{i}$ is used. In order to generate the straight line between the two points $P$ and $Q$, the values of $\mathrm{n}_{\mathrm{i}}$ are computed. Their least common multiple $\mathrm{l}=\mathrm{LCM}\left(\mathrm{n}_{\mathrm{i}}\right)$ is evaluated, ${ }^{1}$ and the values of $\mathrm{n}_{\mathrm{i}}^{\prime \prime}=1 / \mathrm{n}_{\mathrm{i}}$ are computed. To obtain only integer
+
+${ }^{1}$ In fact, either a low-complexity method in $\mathrm{O}(\mathrm{n} \log \mathrm{k})$ based on a table lookup or a simple common multiple can be used here. computations, the values of $n_{i}^{\prime}=2 n^{\prime \prime}$ are used. The cells $d_{i}$ are initialized to the value $n_{i}^{\prime} / 2$. This initialization has to be made, otherwise the path generated corresponds to another rasterization scheme. At each step, $\mathrm{n}_{\mathrm{i}}^{\prime}$ is added to the di with the smallest value, and the ith signed direction is generated. The generation procedure is repeated until all $d_{i}$ have reached the value $2 l+n_{i}^{\prime \prime}$. which is equivalent to $\forall i, d_{i} \geq 2 l$.\\
+
+
+
+
+\end{CJK}
