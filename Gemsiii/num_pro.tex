@@ -269,7 +269,7 @@ L_{\mathrm{i}}^{\pm}=\frac{1}{2}\left(\frac{1}{2} \epsilon_{\mathrm{ijk}} L_{\ma
 因此可以使用$O(3)$滚动球算法单独控制。以这种方式产生的旋转可以写成
 
 \begin{align}
-R^{\pm}=I_{4} \cos \theta+\vec{n} \dot \vec{L}^{\pm} \sin \theta,
+R^{\pm}=I_{4} \cos \theta+\vec{n}  \cdot \vec{L}^{\pm} \sin \theta,
 \end{align}
 
 
@@ -402,10 +402,10 @@ $$
 
 \begin{align}
 \begin{aligned}
-{[a, b]+[c, d] } &=[a+c, b+d], \\
-{[a, b]-[c, d] } &=[a-d, b-c], \\
-{[a, b] \cdot[c, d] } &=[\min (a c, a d, b c, b d), \max (a c, a d, b c, b d)], \\
-{[a, b] /[c, d] } &=[a, b][1 / d, 1 / c] \text { if } 0 \sim[c, d],
+{[a, b]+[c, d]}  &=[a+c, b+d], \\
+[a, b]-[c, d]  &=[a-d, b-c], \\
+[a, b] \cdot [c, d] &=[\min (a c, a d, b c, b d), \max (a c, a d, b c, b d)], \\
+[a, b]/[c, d]  &=[a, b][1 / d, 1 / c] \text { if } 0 \sim[c, d],
 \end{aligned}
 \end{align}
 
@@ -510,99 +510,103 @@ Pittsburgh, Pennsylvania}
 
 自由运行的内部循环通常需要一系列重复每个$N$步骤的值或条件。例如，高速z -缓冲区绘制技术(Booth et al.， 1986)必须以三个周期执行缓冲区交换和内务管理。当$N$不是2的幂时，直接检查寄存器的低阶位可能不会被用来形成N的计数模。类似地，一个快速的二维N-gon生成器需要循环生成$N$的值序列，顶点$N$与顶点0相同。这个Gem考虑了$N<8$的紧凑方法，它使用的机器指令不超过三条，也不超过三个寄存器。不使用条件逻辑，使得该技术非常适合手工编码。
 
-Free-running inner-loops often require a sequence of values or conditions that repeat every $\mathrm{N}$ steps. For instance, a technique for high-speed Z-buffer drawing (Booth et al., 1986) must perform buffer swapping and housekeeping in cycles of three. When $\mathrm{N}$ is not a power of two, direct examination of a register's low order bits may not be used to form a count modulo N. Similarly, a fast 2-D N-gon generator requires the cyclic production of a sequence of $\mathrm{N}$ values, with vertex $\mathrm{N}$ identical to vertex zero. This Gem considers compact methods for $\mathrm{N}<8$ that use neither more than three machine instructions nor three registers. No conditional logic is employed, making the techniques well-suited to hand coding.
-
-\subsection*{$N=2$ (Review)}
+\subsection*{$\mathbf{N=2}$ (Review)}
 我们熟悉的双重“toggle”在true和false之间交替:
 
 
 \begin{align}
 \begin{aligned}
-&\text { condition := not(condition); } \quad \textit { True in alternating cases } \\
-&\text { if (condition) } . . .
+&\text { condition := \textbf{not} (condition); } \quad \textit { True in alternating cases } \\
+&\text { \textbf{if} (condition) } . . .
 \end{aligned}
 \end{align}
 
+类似地，值的双重“循环”是一个简单的交替。当两个值都是预先确定的，一条指令和一个整数寄存器就足够了:
 
-Similarly, a two-fold "cycle" of values is a simple alternation. When both values are predeterminated, one instruction and one integer register suffice:
+
 
 $$
 \begin{array}{ll}
-\text { register } a:=v 1 ; & \text { initialize } \\
-\text { constant } c:=v 1+v 2 ; & \\
-\text { repeat } & \text { cycle } \\
+\text { \textbf{register}  } a:=v 1 ; & \text { initialize } \\
+\text { \textbf{constant}  } c:=v 1+v 2 ; & \\
+\text { \textbf{ repeat} } & \textit { cycle } \\
 %\quad a:=a-c ; & a:[v 1 \text { v2ن } \cdots]
-\quad a:=a-c ; & a:[v 1 \text { v2} \cdots]
+\qquad a:=a-c ; & a:[v 1 \text { v2} \cdots]
 \end{array}
 $$
 
-For instance, Wirth (1973) speeds a prime number sieve by using (2.2) to generate the sequence $\left[\begin{array}{lllll}2 & 4 & 2 & 4 & \cdots\end{array}\right]$ of distances between successive odd integers not divisible by three (Knuth, 1981). Rewriting the arithmetic of (2.2) with logical xor operations yields a well-known, patented method for inverting a frame-buffer's pixels in alternating fashion. In arithmetic form, a pixel inversion scheme well-suited to greyscale frame buffers is rederived (Newman and Sproull, 1979).
+例如，Wirth(1973)通过使用(2.2)来加速质数筛选，生成序列$\left[\begin{array}{lllll}2 & 4 & 2 & 4 & \cdots \end{array} \right]$，该序列表示不能被3除的连续奇数之间的距离(Knuth, 1981)。用逻辑异或操作重写(2.2)的算术，可以得到一种著名的专利方法，以交替的方式反转帧缓冲区的像素。以算术形式，重新推导出适合于灰度帧缓冲区的像素反演方案(Newman和Sproull, 1979)。
 
-Most generally, the cyclic sequence is specified only at run time. For $\mathrm{N}=2$, cycling is swapping, easily accomplished in three arithmetic or logical operations without resort to a third holding register, as described in previous Gems by Paeth (1990) and Wyvill (1990), respectively.
+通常情况下，循环序列只在运行时指定。对于$N=2$，循环是交换，很容易在三个算术或逻辑操作中完成，而不需要借助第三个持有寄存器，分别在Paeth(1990)和Wyvill(1990)之前的Gems中描述过。
 
-\subsection*{$N=3$ (Extension)}
-The pairwise swapping technique does not extend gracefully: Cyclic permutation of the sequence [a, b, c] by exchanging (for example) elements at locations $(1,2)$ and $(2,3)$ costs six instructions and three registers. A first-principles cyclic brigade method requires $\mathrm{N}+1$ registers and $\mathrm{N}+1$ assignments. Though straightforward, the latter still exceeds both the instruction and register limits set forth in the preface:
-
-$$
-\begin{aligned}
-& \text { r1 :=r1 xor r2; } \quad \text { r2 :=r2 xor r1; } \quad \text { rx }:=r 1 ; \quad r 1:=r 2 \text {; } \\
-& \text { r1 :=r1 xor r2; } \quad \text { r2:=r2 xor r3; <versus> } \quad r 2:=r 3 ; \quad r 3:=r x ; \\
-& \text { r3 }:=\text { r3 xor r2; } \quad \text { r2 }:=\text { r2 xor r3 }
-\end{aligned}
-$$
-
-Often, as in (2.1), values are required only to trigger a 1-in-N event. For $\mathrm{N}=3$, two registers and two lines suffice. Each register instruction is of the compact, two-op form $\ll r x=r x$ op ry $\gg$ :
+\subsection*{$\mathbf{ N=3}$ (扩展)}
+成对交换技术不能优雅地扩展:序列[a, b, c]的循环排列通过交换(例如)位置$(1,2)$和$(2,3)$的元素需要6条指令和3个寄存器。第一性原理循环队列方法需要$\mathrm{N}+1$个寄存器和$\mathrm{N}+1$个赋值。后者虽然简单明了，但仍然超出了序言中规定的指令和寄存器的限制:
 
 $$
 \begin{aligned}
-& \text { register r1 }:=0 ; \quad \text { Three fold trigger } \\
-& \text { register r2 :=1; } \\
-& \text { repeat cycle: }
+& \text { r1 :=r1  \textbf{xor} r2; } \quad \text { r2 :=r2 \textbf{xor} r1; } \quad  &rx :=r 1 ; \quad r 1:=r 2 \text {; } \\
+& \text { r1 :=r1 \textbf{xor} r2; } \quad \text { r2:=r2 \textbf{xor} r3; <versus>} \quad &r2:=r 3 ; \quad r 3:=r x ; \\
+& \text { r3 := r3 \textbf{xor} r2; } \quad \text { r2 }:=\text { r2 \textbf{xor} r3 }
+\end{aligned}
+$$
+通常，如(2.1)所示，只需要值来触发1-in-N事件。对于$N=3$，两个寄存器和两行就足够了。每个寄存器指令都是紧凑的双运算形式$\ll r x=rx \quad op \quad ry \gg$
+
+
+$$
+\begin{aligned}
+& \textbf { register } r1 :=0 ;  &\textit{Three fold trigger } \\
+& \textbf { register } r2 :=1;  \\
+& \text { \textbf{ repeat}}         & \textit{ cycle: }\\
+&\qquad \text { r1 :=r1  \textbf{xor} r2;} &r1:[1\quad 1 \quad 0\quad \cdots] \\
+&\qquad \text { r2 :=r2 \textbf{xor} r1; } &r2:[0\quad 1 \quad 1\quad \cdots] 
 \end{aligned}
 $$
 
-This produces the tertiary (r1, r2) column set shown. The trigger occurs when a register is zero. Testing on r2 streamlines the operation under the
+这就产生了所示的三级（$r1,r2$）列集。当一个寄存器为零时，就会触发。在假设硬件条件代码是由前面的逻辑操作设置的情况下，对r2的测试简化了操作。测试的阶段可以通过在初始化( $r1, r2)$时替换第三列以外的列来调整。触发2-3次定义了互补集：非零的测试被替换。三个相位不同的1-in-3测试可以同时进行，形成一个循环的开关。
 
-\begin{center}
-\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-100}
-\end{center}
-
-\begin{center}
-\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-100(1)}
-\end{center}
-
-\section{II.5 FAST GENERATION OF CYCLIC SEQUENCES}
-assumption that hardware condition codes are set by the preceeding logical operations. The phase of the test may be adjusted by substituting a column other than the third in the initialization of ( $\mathrm{r} 1, \mathrm{r} 2)$. Triggering 2-in-3 times defines the complementary set: a test for nonzero is substituted. The three phase-distinct 1-in-3 tests may be done concurrently, forming a cyclic switch:
 
 $$
 \begin{array}{ll}
-\text { if } r=0 \text { then } \cdots & 1 \text {-in-3, phase }=0 \\
-\text { if } r l=r 2 \text { then } \cdots & 1 \text {-in-3, phase }=1 \\
-\text { if } r l=0 \text { then } \cdots & 1 \text {-in-3, phase }=2
+\textbf { if } r=0 \textbf { then } \cdots & 1 \text {-in-3, phase }=0 \\
+\textbf { if } r1=r 2 \textbf { then } \cdots & 1 \text {-in-3, phase }=1 \\
+\textbf { if } r1=0 \textbf { then } \cdots & 1 \text {-in-3, phase }=2
 \end{array}
 $$
 
-The conditions and related blocks may be embedded among the xor operations to take advantage of implicit condition code sensing. That is, the two xor lines that implicitly define the modulo three counter need not be adjacent.
+条件和相关块可以嵌入到异或操作中，以利用隐式条件代码感知。也就是说，隐式定义模数为3的计数器的两条异或线不必相邻。
 
-Cyclic permutation of three variables in three registers can be done in the minimum number of instructions (three). The derivation is not obvious and relates the threefold arithmetic case described later.
+三个寄存器中三个变量的循环排列可以在最少的指令数(3条)内完成。推导过程并不明显，并与后面描述的三重算术情形相关。
 
-$$
-\begin{aligned}
-&\text { register int } a=c 1 ; \quad \text { Three fold cycle } \\
-&\text { register int } b=c 1 \text { xor } c 2 \text {; } \\
-&\text { constant int } c=c 1 \text { xor } c 2 \text { xor } c 3 \text {; }
-\end{aligned}
-$$
 
-$$
-\begin{aligned}
-& \text { repeat cycle: } \\
-& \mathrm{a}=\mathrm{a} \text { xor } \mathrm{b} \text {; } \\
-& \text { a: [c1 c2 c3...] } \\
-& \mathrm{b}=\mathrm{b} \text { xor } \mathrm{c} \text {; } \\
-& \mathrm{b}=\mathrm{b} \text { xor } \mathrm{a} \text {; }
-\end{aligned}
-$$
+\IncMargin{1em}
+\begin{algorithm} 
+\SetKwData{Left}{left}
+\SetKwData{This}{this}
+\SetKwData{Up}{up} 
+\SetKwFunction{Union}{Union}
+\SetKwFunction{WritePixel}{WritePixel}
+\SetKwFunction{FindCompress}{FindCompress} 
+\SetKwFunction{Register}{register} 
+\SetKwFunction{Repeat}{repeat} 
+\SetKwFunction{Constant}{constant} 
+\SetKwFunction{Xor}{xor} 
+\SetKwInOut{Input}{input}
+\SetKwInOut{Output}{output}
+
+\SetKwData{EdgeSet}{EdgeSet}
+\SetKwData{Point}{point}
+
+	  \Register int  a=c1; \tcp{ Three fold cycle } 
+ \Register int  b=c1 \Xor c2 \;
+ \Constant int  c=c1 \Xor c2 \Xor c3 \;
+ \Repeat \tcp{cycle:}  
+ a=a \Xor b;  \tcp{\text{ a: [c1 c2 c3...] }}
+ b=b \Xor c \; 
+ b=b \Xor a \;
+ 	 \end{algorithm}
+\DecMargin{1em} 
+
+
 
 The use of logical xor is valuable as the elements may be a mixed sequence of integers, pointers and floats; arithmetic operations would not permit this. Note that the last two lines both update the value in b, while register c is never written. This suggests the alternate line:
 
