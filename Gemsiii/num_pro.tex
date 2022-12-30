@@ -605,148 +605,155 @@ $$
  b=b \Xor a \;
  	 \end{algorithm}
 \DecMargin{1em} 
-
-
-
-The use of logical xor is valuable as the elements may be a mixed sequence of integers, pointers and floats; arithmetic operations would not permit this. Note that the last two lines both update the value in b, while register c is never written. This suggests the alternate line:
-
+逻辑\textbf{xor}的使用是有价值的，因为元素可以是整数、指针和浮点数的混合序列;算术运算不允许这样做。注意，最后两行都更新了b中的值，而寄存器c从未被写入。这暗示了另一条路线:
 $$
-\mathrm{b}:=\mathrm{b} \text { xor (a xor } \mathrm{c} \text { ) }
+\mathrm{b}:=\mathrm{b} \text { \textbf{xor} (a \textbf{xor} } \mathrm{c} \text { ) }
 $$
+其中$\mathrm{c}$等于一个预先确定的编译时间常数。但是，该值在运行时通常必须占用第三个寄存器。(请参阅c代码中产生循环[1,2,3]的双寄存器变体。)
+当只需要触发时，修复$\mathrm{c}=0$将省略循环的中线，重新构造$\mathrm{N}=3$触发情况。另外，这两行可以看作是熟悉的异或交换代码的前两行。因为后者的最后一行与第一行匹配，所以三次通过两行异或代码在两个寄存器上产生的顺序动作与两次通过三行代码产生的顺序动作相同(这是通过指令分组在式(3.1a)中提出的)。两者都定义了恢复双交换:对两个元素进行不少于6步的标识操作。因此，两行代码形成长度为3的循环，同时生成序列$[\mathrm{r} 1, \mathrm{r} 1 \oplus \mathrm{r} 2, \mathrm{r} 2]$。
 
-in which $\mathrm{c}$ is equated to a predetermined compile time constant. However, the value must typically occupy a third register at run time. (See the C-code for a two register variant which produces the cycle [1, 2, 3].)
 
-
-When mere triggering is required, fixing $\mathrm{c}=0$ elides the middle line of the cycle, reconstructing the $\mathrm{N}=3$ triggering case. Alternately, the two lines may be regarded as the first two of three lines of the familiar xor swap code. Because the final line of the latter matches the first, three passes through the two-line xor code produce the same sequential action on the two registers as do two passes through the three-line code (this is suggested in Eq.(3.1a) by the grouping of instructions). Both define a restoring double swap: the identity operation on two elements in no less than six steps. Thus, the two-line code forms cycles of length three while generating the sequence $[\mathrm{r} 1, \mathrm{r} 1 \oplus \mathrm{r} 2, \mathrm{r} 2]$.
-
-\subsection*{$N=3,4,6$}
-
-Remarkably, cycles of length up to $\mathrm{N}_{\overline{5}} 6$ require only two registers. Clearly, there is insufficient storage for swapping of all elements, else a cyclic brigade of $\mathrm{N}+1$ registers and $\mathrm{N}+1$ assignments would suffice. Instead, the goal is to derive a set of values (on one or both registers) in which all generated values are distinct. Thus, the registers must "count," and rival first-principles code such as a quick hexagon-drawing routine:
-
-\section{Xval =X\_ Value\_ Table[(i := (i $+1 \bmod 6))]$; 
- Yval = Y\_ Value\_ Table[i];}
-Here the modulus is a major expense: its cost is on par with integer division. The other first-principles method uses conditional logic to restart a decrementing counter, giving a large branch penalty on modern pipelined hardware, made worse by small N.
-
-As will be seen in (6.2), vertex production of 2-D hexagons may use this sixfold cycle:
+\subsection*{$\mathbf{N=3,4,6}$}
+值得注意的是，长度不超过$N=6$的循环只需要两个寄存器。显然，没有足够的存储空间来交换所有元素，否则$N+1个$寄存器和$N+1个$赋值就足够了。相反，目标是派生一组值(在一个或两个寄存器上)，其中所有生成的值都是不同的。因此，寄存器必须“计数”，并与第一性原理代码相竞争，例如快速六边形绘制例程:
 
 $$
 \begin{aligned}
-&\text { register } \mathrm{x}=\mathrm{y}=1 \text {; } \\
-&\text { repeat }
+&\text{Xval =X\_Value\_Table[(i := (i +1 \textbf{mod} 6))];} \\
+&\text{Yval = Y\_Value\_Table[i];}
 \end{aligned}
 $$
+在这里，模数是一个主要的费用:它的成本与整数除法相当。另一种第一性原理方法使用条件逻辑重新启动一个递减的计数器，在现代流水线硬件上产生很大的分支惩罚，而小N则使情况变得更糟。
 
-Xval = X\_coord $[\mathrm{x}:=\mathrm{x}+\mathrm{y}] ;$
-
-Yval = Y\_coord[y := $\mathrm{y}+\operatorname{not}(\mathrm{x})]$
-
-where $\operatorname{not}(\mathrm{x})$ is bit inversion, i.e., $\operatorname{not}(\mathrm{x})=\mathrm{x}$ xor $(-1)$ under two
-
-complement hardware. Arrays of length seven are required having suitable offsets, as seen in the companion C code.
-
-\subsection*{$N=\mathbf{6}$ Derivation}
-Nonuniform rotation may be modeled by functional composition. That is, $\mathrm{F}(\mathrm{F}$. . . $(\mathrm{F}([\mathrm{x}]))$. .. $)=[\mathrm{x}]$ in no less than $\mathrm{N}$ steps. For instance, the linear fractional function $F\left(x_{5}\right)_{\sqcup}\left[2 x_{\sqcup} l\right] /[x+1]$ yields $F^{6}(x)=x$ (Yale, 1975). Such forms may be equated directly to the algebra of $2 \times 2$ matrices (Birkhoff and MacLane, 1965); the former are treated preferentially for ease of derivation.
-
-The values of two registers may be represented by a point $[x, y]$ on an integer lattice, one coordinate per register. Treated as a (column) vector $\mathrm{v}$, the function $\mathrm{F}$ is a $2 \times 2$ matrix of which premultiplies $\mathrm{v}$. For a given $\mathrm{N}$, F must be determined such that $\mathrm{F}^{\mathrm{N}} \mathrm{v}=\mathrm{I}$. When $\mathrm{F}$ is a shear matrix rotation may be achieved in three shears (Paeth, 1986), requiring only one assignment statement per shear (p.182). When the off-diagonal matrix element is $\{\pm 1\}$, no multiplication occurs and one machine instruction suffices. All-rational forms also yield rotation, but the sets of circumferential points are not roots of unity (vertices of an $\mathrm{N}$-gon inscribed in a unit circle on the complex Cartesian plane). The one solution is for fourfold rotation. That decomposition is:
+在(6.2)中可以看到，二维六边形的顶点生成可以使用这样的六重循环:
 
 $$
-\begin{array}{cc}
+\begin{aligned}
+&\text { \textbf{register} } \mathrm{x}=\mathrm{y}=1 \text {; } \\
+&\text { \textbf{repeat} }\\
+&\qquad \text {Xval = X\_coord[x :=x+y] ;}\\
+&\qquad \text {Yval = Y\_coord[y := y+\textbf{not}(x)]}
+\end{aligned}
+$$
+其中$\bf{not}(\mathrm{x})$是位反转，即$\bf{not}(\mathrm{x})=x \quad \bf{xor} (-1)$在两个互补硬件下。长度为7的数组需要有合适的偏移量，如配套的C代码所示。
+
+
+\subsection*{$\mathbf{N=6}$ 推导}
+非均匀旋转可以用函数组合来模拟。即$F(F\cdots(F([x]))\cdots)=[x]$在不少于$N$步骤。例如，线性分数函数$F(x)=\left[2 x-1\right] /[x+1]$得到$F^{6}(x)=x$ (Yale, 1975)。这种形式可以直接等同于$2 \times 2$矩阵的代数(Birkhoff and MacLane, 1965);为了便于推导，优先处理前者。
+
+两个寄存器的值可以用整数点阵上的点$[x, y]$表示，每个寄存器一个坐标。作为一个(列)向量$v$，函数$F$是一个$2 \times 2$矩阵，它的前乘是$v$。对于给定的$N$， F必须确定为:$\mathrm{F}^{\mathrm{N}} v=\mathrm{I}$。当$\mathrm{F}$是一个剪切矩阵时，旋转可以在三个剪切中实现(Paeth, 1986)，每个剪切只需要一个赋值语句(第182页)。当非对角矩阵元素为$\{\pm 1\}$时，不会发生乘法运算，一条机器指令就足够了。全有理形式也产生旋转，但圆周点的集合不是单位根(在复笛卡尔平面上单位圆内刻的$n$边形的顶点)。唯一的解决方案是四次旋转。这种分解是:
+
+$$
+\begin{bmatrix}
 0 & -1 \\
 1 & 0
-\end{array}=\begin{array}{cccccc}
-1 & 1 & 1 & 0 & 1 & 1 \\
-0 & 1 & -1 & 1 & 0 & 1
-\end{array} .
+\end{bmatrix}
+=\begin{bmatrix}
+1 & 1 \\
+0 & 1
+\end{bmatrix}
+\begin{bmatrix}
+ 1 & 0 \\
+  -1 & 1
+\end{bmatrix}
+\begin{bmatrix}
+1 & 1 \\
+0 & 1
+\end{bmatrix}.
 $$
+第一个和第三个矩阵的重新分组(第192页)允许两行旋转，在提供隐式乘2的机器上很有用:
 
-Regrouping of the first and third matrix (p.192) allows a two-line rotation, useful on machines that provide an implicit multiplication by two:
 
-$$
+\begin{align}
 \begin{aligned}
-& \mathrm{x}:=\mathrm{x}+\mathrm{y} ; \quad \mathrm{x}:=\mathrm{x}+\left(2^{*} \mathrm{y}\right) ; \\
-& \mathrm{y}:=\mathrm{y}-\mathrm{x} ; \quad<0 \mathrm{x}>\quad \mathrm{y}:=\mathrm{y}=\mathrm{x} ; \\
+& \mathrm{x}:=\mathrm{x}+\mathrm{y} ; \qquad \qquad \qquad \mathrm{x}:=\mathrm{x}+\left(2^{*} \mathrm{y}\right) ; \\
+& \mathrm{y}:=\mathrm{y}-\mathrm{x} ; \quad < \mathrm{or}>\quad \mathrm{y}:=\mathrm{y}=\mathrm{x} ; \\
 & \mathrm{x}:=\mathrm{x}+\mathrm{y} \text {; }
 \end{aligned}
-$$
+\tag{4.1}
+\end{align}
 
-This sequential form is slightly more expensive than the compact $\{x=$ $\left.-y, y_{\bar{E}} \mathrm{x}\right\}$ form made possible when simultaneous reassignment of register values is possible, as in hardware. Rotations of three and six may
+这种顺序形式比紧凑的$\{x=-y, y=x\}$形式稍微昂贵一些，当寄存器值可以同时重赋时，就像在硬件中一样。3和6的旋转可以通过寻找符号形式的$\mathrm{X}$和$\mathrm{Y}$剪切的乘积的特征值并将它们与单位根相等来形成，从而确定两个离轴元素的值。在其最紧凑的形式中，这将产生二次方程$z=\frac{1}{2}\left(m \pm \sqrt{m^{2}-4}\right)$，它可以表示$N=\{1,2,3,4,6\}$的单位根$z^{N}=1$，其值分别为$m=\{2,2,1,1,0,1 \}$。使用MAPLE对矩阵方程$(\mathrm{XY})^{\mathrm{N}}=\mathrm{I}$的符号矩阵元素的解，不揭示与下面通解明显不同的实值积分形式:
 
-be formed by finding the eigenvalues of the product of an $\mathrm{X}$ and $\mathrm{Y}$ shear in symbolic form and equating them with the roots of unity, thus determining the values of the two off-axis elements. In its most compact form, this yields the quadratic equation $z=\frac{1}{2}\left(m \pm \sqrt{m^{2}-4}\right)$, which can represent roots of unity $z^{N}=1$ for $N=\{1,2,3,4,6\}$, with the respective values $m=\{2,-2,-1,0,1\}$. Solution using MAPLE on the matrix equation $(\mathrm{XY})^{\mathrm{N}}=\mathrm{I}$ with symbolic matrix elements does not reveal real-valued, integral forms markedly distinct from this general solution:
-
-$$
-\begin{aligned}
-& (\mathrm{m}, \mathrm{N})=\{(-1,3),(0,4),(1,6)\}
-\end{aligned}
-$$
-
-Both three-and sixfold rotation using unit elements are thus possible. These are unexpected, given the irrationality of $\cos 60^{\circ}$. The distortion of the simplified two-shear rotational form has become a virtue in fixing vertices to integral locations. Note that the three nontrivial solutions for $\mathrm{N}=(3,4,6\}$ enumerate the set of $\mathrm{N}$-gons that tile the plane (Figs. 1a, 1b).
-
-An automated examination of all three-instruction, three-register shears having small multipliers was conducted. No solutions for new $\mathrm{N}$ were found, and most forms were not markedly distinct. The two-register\\
-\includegraphics[max width=\textwidth, center]{2022_11_30_0cbb01a33d99487fc27fg-104}
-
-Figure 1.
-
-\begin{center}
-\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-104(1)}
-\end{center}
-
-$\mathrm{N}=3$ form was rewritten using xor, leading to (3.3). The $\mathrm{N}=6$ two-register form was seen to accommodate one additional constant, which offsets the hexagon in $x$, illustrated in Fig. $1 b$ and presented algebraically below:
-
-When $\mathrm{c}=0$, the values in register a lag those in b by two steps, suggestive of a (cos $t, \sin t)$ generator, except the $90^{\circ}$ quadrature becomes a $120^{\circ}$ phase offset. With $c \neq 0$ the generation of a sequence of distinct values is achieved, meeting the original goal. Setting $\mathrm{c}=-1$ allows the implicit formation of the - $(\mathrm{a}+1)$ term using the logical ones complement (Paeth and Schilling, 1991), giving:
 
 $$
 \begin{aligned}
-& \mathrm{a}_{\bar{\Xi}}=\mathrm{b}_{\mathrm{s}}=1 ; \quad \text { six-fold fixed-ualue cycle } \\
-& \text { repeat } \\
-& \mathrm{a}:=\mathrm{a}+\mathrm{b} ; \quad \mathrm{a}:\left[\begin{array}{llllll}1 & 2 & 0 & -3 & -4 & -2\end{array}\right]
+\left(\begin{bmatrix}
+ 1 & 0\\
+ m\mp2 & \pm 1
+\end{bmatrix}\begin{bmatrix}
+\mp 1 & 1\\
+0 & 1
+\end{bmatrix}=\begin{bmatrix}
+\pm1 & 1 \\
+\pm m-2 & m\mp 1
+\end{bmatrix}\right)^N=\begin{bmatrix}
+1 & 0\\
+0 &1
+\end{bmatrix},\\
+(\mathrm{m}, \mathrm{N})=\{(-1,3),(0,4),(1,6)\}
 \end{aligned}
 $$
+因此，使用单位元件可以进行三倍和六倍的旋转。考虑到$\cos 60^{\circ}$的不合理性，这是意料之外的。简化的双剪切旋转形式的变形已成为固定顶点到积分位置的优点。注意$\mathrm{N}=(3,4,6\}$的三个非平凡解枚举了平铺平面的$N$边形集合(图1a, 1b)。
 
-in which the c offset displaces the hexagon's center laterally, removing symmetry of central inversion. This helps achieve distinct values. With $\mathrm{a}>0, \mathrm{~b}>0$ and $2 \mathrm{c}>\mathrm{a}+\mathrm{b}$, the sequence in $\mathrm{a}$ is always positive.
+\begin{figure}[htbp]
+\includegraphics[max width=0.8\textwidth, center]{2022_11_30_0cbb01a33d99487fc27fg-104}
+\caption{}
+\end{figure}
 
-\subsection*{$\mathrm{N}=6$ (Triggering)}
-Arbitrary triggering is possible using the sixfold form. The distinct values of the preceding algorithm allow concurrent 1-in- $\mathrm{N}$ triggers having any phase offset. However, 2-in-N and 3-in- $\mathrm{N}$ forms with nonadjacent triggers present greater difficulty: They may not be created by replacing equality test with an inequality. This is a consequence of the figures' convexity: In geometric terms, a test such as y $>4$ represents a horizontal half-space of values. Intersection of the polygon by the plane splits it into two distinct boundary sets of conterminous vertices. The goal is a simple trigger that does not resort to intra-register bit testing as in the companion Gem cited above.
+我们对所有具有小乘数的三指令、三寄存器剪子进行了自动检查。没有发现新的$N$的解决方案，而且大多数形式没有明显的区别。双寄存器的 $N=3$的形式被用xor重写，导致（3.3）。$N=6$的双寄存器形式被认为可以容纳一个额外的常数，它抵消了$x$中的六边形，如图$1 b$所示，下面用代数法表示:
 
-Six states allow 64 trigger patterns, in which a "*" (".") in the ith place represents a (dis)arming of the trigger for the ith state. Elimination
+\begin{align}
+\begin{aligned}
+&a:=a+b; &a:\begin{bmatrix}
+a &a+b & b+c &-a+2c & 2c-a-b &c-b 
+\end{bmatrix}\\
+&b:=b-a+c; &b:\begin{bmatrix}
+b & c-a & c-a-b & -b & a-c & a+b-c
+\end{bmatrix}
+\end{aligned}
+\tag{6.1}
+\end{align}
+当$\mathrm{c}=0$时，寄存器a中的值滞后于寄存器b中的值两步，提示存在一个(cos $t， \sin t)$生成器，除了$90^{\circ}$正交变成$120^{\circ}$相位偏移。通过$c \neq 0$，实现了一系列不同值的生成，达到了最初的目标。设置$\mathrm{c}=-1$允许使用逻辑补体- $(\mathrm{a}+1)$项的隐式形式(Paeth和Schilling, 1991)，给出:
 
-\begin{center}
-\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-105}
-\end{center}
+\begin{align}
+\begin{aligned}
+& a=b=1 ; \quad \textit { six-fold fixed-ualue cycle } \\
+& \textbf { repeat } \\
+& \qquad \mathrm{a}:=\mathrm{a}+\mathrm{b} ; \qquad \mathrm{a}:\left[\begin{array}{llllll}1 & 2 & 0 & -3 & -4 & -2\end{array}\right]\\
+& \qquad \mathrm{b}:=\mathrm{b}+\textbf{not}(\mathrm{a}) ; \quad \mathrm{b}:\left[\begin{array}{llllll}1 & -2 & -3 & -1 & 2 & 3\end{array}\right]
+\end{aligned}
+\tag{6.2}
+\end{align}
+其中，c偏移量横向位移六边形的中心，消除了中心反转的对称性。这有助于实现不同的价值。对于$\mathrm{a}>0, \mathrm{~b}>0$和$2 \mathrm{c}>\mathrm{a}+\mathrm{b}$， $\mathrm{a}$中的序列始终为正。
 
-\begin{center}
-\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-105(1)}
-\end{center}
+\subsection*{$\mathbf{N=6}$ (触发)}
+使用六重形式可以任意触发。上述算法的不同值允许并发1-in- $\mathrm{N}$触发器具有任何相位偏移。然而，带有非相邻触发器的2-in-N和3-in- $\mathrm{N}$形式存在更大的困难:它们可能不能通过用不等式替换相等测试来创建。这是图形凸性的结果:在几何术语中，像y $>4$这样的测试表示值的水平半空间。多边形与平面的交点将其分割为两个相邻顶点的不同边界集。目标是一个简单的触发器，它不需要像上面引用的Gem那样使用寄存器内位测试。
 
-\begin{center}
-\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-105(2)}
-\end{center}
+6个状态允许64个触发模式，其中第i个位置的“*”(“.”)表示第i个状态的触发器解除。互补模式的消除使这个数字减半。包含重复触发器的模式，如“***\textit{...”和“}*.*.*.”可以分解为超循环或子循环并被消除。左边是三个原型模式，分别设置了一个、两个或三个比特。测试使用(6.2)中的六倍旋转变量，隐含$(c=-1)$和起始值$a=b=0$:
 
-\section{II.5 FAST GENERATION OF CYCLIC SEQUENCES}
-of complementary patterns halves this number. Patterns containing repetitive triggers such as “**\textit{.." and “}...." may be decomposed into super or subcycles and are eliminated. Left are three prototypical patterns, having one, two, or three bits set. Testing uses the sixfold rotation variant in (6.2) with implicit $(c=-1)$ and starting values $a=b=0$ :
 
-$$
+\begin{align}
 \begin{array}{rlrrrrrr}
 \text { a: } & 0 & 0 & -1 & -2 & -2 & -1 \\
 \text { b: } & 0 & -1 & -1 & 0 & +1 & +1 \\
-\mathrm{a}=0 \text { AND b}= & 0: & * & \cdot & . & . & - & . \\
-\mathrm{a}= & 0: & * & . & * & . & . \\
-\mathrm{a}=0 \text { OR } \mathrm{b}= & 0: & * & * & . & * & .
+\mathrm{a}=0 \text { AND b}= 0:&   * & \cdot & . & . & . & . \\
+\mathrm{a}= 0: & * & . & * & . & . & . \\
+\mathrm{a}=0 \text { OR } \mathrm{b}=0: & * & * & . & * & . & .
 \end{array}
-$$
-
-The widespread use of xor suggests methods similar to pseudo-random number (RPN) generation on the field of integers $\bmod 1$ (see Morton, 1990). The traditional shift and carry-test logic hardware may be "wired" directly into three xor register instructions having a permuting form, giving
+\tag{6.3}
+\end{align}
+\textbf{xor}的广泛使用提出了类似于在整数\textbf{mod}1上生成伪随机数(RPN)的方法(参见Morton, 1990)。传统的移位和携带测试逻辑硬件可以直接“连接”到三个\textbf{xor}寄存器指令，具有排列形式，给出
 
 $$
 \begin{aligned}
-& \text { repeat } \\
-& \mathrm{b}:=\mathrm{b} \text { xor } \mathrm{a} \text {; } \\
-& \mathrm{c}:=\mathrm{c} \text { Xorb; } \\
-%& \mathrm{a}:=\mathrm{a}_{\mathbf{प}} \text { रr } \text {; }
-& \mathrm{a}:=\mathrm{a}_{\mathbf{q}} 
+& \textbf { repeat } \quad \textit { cycle by seven }\\
+& \qquad \mathrm{b}:=\mathrm{b} \textbf { xor } \mathrm{a} \text {; } \\
+& \qquad \mathrm{c}:=\mathrm{c} \textbf { xor } \text{b;} \\
+& \qquad \mathrm{a}:=\mathrm{a}\textbf { xor } \mathrm{b}
 \end{aligned}
 $$
 
-This yields the table of values listed below.
+这将产生如下所示的值表。
 
 \begin{center}
 \begin{tabular}{lll}
@@ -757,42 +764,39 @@ $\mathrm{a}$ & $\mathrm{b}$ & $\mathrm{c}$ \\
 $\mathrm{a} \oplus \mathrm{b}$ & $\mathrm{b} \oplus \mathrm{c}$ & $\mathrm{a} \oplus \mathrm{b} \oplus \mathrm{c}$ \\
 $\mathrm{a} \oplus \mathrm{c}$ & $\mathrm{a}$ & $\mathrm{b}$ \\
 $\mathrm{c}$ & $\mathrm{a} \oplus \mathrm{b}$ & $\mathrm{b} \oplus \mathrm{c}$ \\
-$\mathrm{a} \oplus \mathrm{b} \oplus \mathrm{C}$ & $\mathrm{a} \oplus \mathrm{c}$ & $\mathrm{a}$ \\
+$\mathrm{a} \oplus \mathrm{b} \oplus \mathrm{c}$ & $\mathrm{a} \oplus \mathrm{c}$ & $\mathrm{a}$ \\
 $\mathrm{b}$ & $\mathrm{c}$ & $\mathrm{a} \oplus \mathrm{b}$ \\
-$\mathrm{b} \oplus \mathrm{c}$ & $\mathrm{a} \oplus \mathrm{b} \oplus \mathrm{C}$ & $\mathrm{a} \oplus \mathrm{c}$ \\
+$\mathrm{b} \oplus \mathrm{c}$ & $\mathrm{a} \oplus \mathrm{b} \oplus \mathrm{c}$ & $\mathrm{a} \oplus \mathrm{c}$ \\
 \hline
 \end{tabular}
 \end{center}
+这里A列领先B两步，同样$B$领先$C$，但$C$领先A三步。每一列取三个变量中所有$\mathrm{N}-1$可能的\textbf{xor}排列，省略了禁止的零状态。这并不限制零元素的周期性生成，可以通过将$\{a, b, c\}$的任意(而不是全部)设为零，或者将两个寄存器中的初始值相等来形成，因为$\mathrm{M}$ \textbf{xor} $\mathrm{M}=0$。
 
-Here column A leads B by two steps, likewise $B$ ahead of $C$, but $C$ leads A by three steps. Each column takes on all $\mathrm{N}_{5}-1$ possible arrangements of xor among the three variables, omitting the forbidden zero state. This does not restrict the periodic production of zero elements, formed either by setting any (but not all) of $\{a, b, c\}$ to zero, or by equating initial values in two registers, since $\mathrm{M}$ xor $\mathrm{M}=0$.
+使用四个寄存器$(r=4)$表示$2^{4}-1=15$状态。由于$r$是偶数，$\mathrm{N}$是因子$\left(2^{2}+1\right)\left(2^{2} -1\right)$的复合。这揭示了$\mathrm{N}=5$的子循环，将小$\mathrm{N}$的表舍入。然而，这种方法比旅法(5个变量，1个临时寄存器，6个分配)只显示了边际增益，因此没有进行研究。对于那些倾向于大$\mathrm{N}$的人，可以使用因子来组成更大的循环:相对素数长度的并发循环在若干步等于它们长度的乘积(GCM)后重新同步。
 
-Use of four registers $(r=4)$ suggests $2^{4}-1=15$ states. Since $r$ is even, $\mathrm{N}$ is composite with factors $\left(2^{2}+1\right)\left(2^{2} 2_{\sqcup}-1\right)$. This reveals the subcycle for $\mathrm{N}_{5}=5$, rounding out the table for small $\mathrm{N}$. However, this method shows only a marginal gain over the brigade method (five variables, one temporary register, six assignments) and was not explored. For those inclined to large $\mathrm{N}$, factors may be used to compose larger cycles: concurrent loops of relatively prime length resynchronize after a number of steps equal to the product (the GCM) of their lengths.
+对于最后一个个位数值，$\mathrm{N}=9$仍然很困难，因为它既不是质数，也不是无平方的合数。$(11,13)$的下一个质数不属于$2^{\mathrm{m}}-1$梅森形式。根据费马定理，它们(和任何质数p)都是$2^{p-1}$的因数，这里$2^{10}-1$和$2^{12}-1$。由于这意味着寄存器的数量至少与\textbf{xor}方法的周期长度呈线性增长，因此brigade方法由于简单而获胜。尽管到目前为止所探索的所有方法的实际限制都是$\mathrm{N}<8$，但更奇特和更复杂的方法是可能的，并且可以通过暴力手段进行检查。其中之一如下所示。
 
-For the last single-digit value, $\mathrm{N}=9$ remains difficult as it is neither prime nor a square-free composite. The next primes at $(11,13)$ are not of the $2^{\mathrm{m}}-1$ Mersenne form. By Fermat's theorem, they (and any prime p) are factors of $2^{p-1}$, here $2^{10}{ }^{1} 1$ and $2^{12}$. 1 . Since this implies that the number of registers grows at least linearly with the cycle length for xor methods, the brigade method wins by virtue of simplicity. Although the practical limit of all methods explored thus far is $\mathrm{N}<8$, more exotic and convoluted methods are possible and may be examined through brute-force means. One is presented below.
-
-\subsection*{$
+\subsection*{$\bf{
 N=24
-$}
+}$}
 
-As a last example, the code
+作为最后一个例子，代码
 
 $$
 \begin{aligned}
-&\text { register } a=4 ; \\
-&\text { register } b=3 ; \\
-&\text { repeat }
+&\textbf { register } a=4 ; \\
+&\textbf { register } b=3 ; \\
+&\textbf { repeat }\\
+&\qquad \mathrm{a}:=\mathrm{a}-\mathrm{b};\\
+&\qquad \mathrm{a}:=\mathrm{a} \textbf{ bit-and } 15; \textit{explicit limit on register a}\\
+&\qquad \mathrm{b}:=\mathrm{b} \textbf{ xor } \mathrm{a} ;
 \end{aligned}
 $$
+提供了一种循环模24的方法。将寄存器$a$的域限制为16个值必然会引入值的多样性。所选的初始值将$a$和$b$限制在域[1..]并进一步保证它们永远不会同时相等。
 
-$\mathrm{a}:=\mathrm{a}-\mathrm{b}$
+这段代码的价值是分别使用条件测试$(b=1)、(a=4)、(b=7)$和$(b=12)$形成并行的24:1、12:1、8:1和6:1的速率除法。这些测试被选择，因此在任何步骤中最多一个为真，通过将$\{1,2,3,4\}$ -in-24测试通过触发位的ring组合，允许速率乘法(最多10-in-24)。注意，只有3 / 24的比率显示出轻微的不均匀性:
 
-a := a bit-and 15; explicit limit on register a
-
-$\mathrm{b}:=\mathrm{b}$ xor $\mathrm{a} ;$
-
-offers a method of cycling modulo 24. Limiting the domain of register $a$ to 16 values necessarily introduces value multiplicity. The initial values
-
-chosen confine both $a$ and $b$ to the domain [1..15] and further insures that they are never simultaneously equal.
+offers a method of cycling modulo 24. Limiting the domain of register $a$ to 16 values necessarily introduces value multiplicity. The initial values chosen confine both $a$ and $b$ to the domain [1..15] and further insures that they are never simultaneously equal.
 
 This code's value is in forming parallel 24:1, 12:1, 8:1, and 6:1 rate division using the conditional tests $(b=1),(a=4),(b=7)$ and $(b=12)$, respectively. These tests are chosen so at most one is true at any step, allowing rate multiplication (up to 10-in-24) by combining the $\{1,2,3,4\}$ -in-24 tests by oring of the triggering bits. Note that only the 3-in-24 rate shows slight nonuniformity:
 
