@@ -796,132 +796,100 @@ $$
 
 这段代码的价值是分别使用条件测试$(b=1)、(a=4)、(b=7)$和$(b=12)$形成并行的24:1、12:1、8:1和6:1的速率除法。这些测试被选择，因此在任何步骤中最多一个为真，通过将$\{1,2,3,4\}$ -in-24测试通过触发位的ring组合，允许速率乘法(最多10-in-24)。注意，只有3 / 24的比率显示出轻微的不均匀性:
 
-offers a method of cycling modulo 24. Limiting the domain of register $a$ to 16 values necessarily introduces value multiplicity. The initial values chosen confine both $a$ and $b$ to the domain [1..15] and further insures that they are never simultaneously equal.
-
-This code's value is in forming parallel 24:1, 12:1, 8:1, and 6:1 rate division using the conditional tests $(b=1),(a=4),(b=7)$ and $(b=12)$, respectively. These tests are chosen so at most one is true at any step, allowing rate multiplication (up to 10-in-24) by combining the $\{1,2,3,4\}$ -in-24 tests by oring of the triggering bits. Note that only the 3-in-24 rate shows slight nonuniformity:
-
-a: $\begin{array}{llllllllllllllll}115 & 2 & 3 & 712 & 5 & 3 & 215 & 3 & 4 & 9 & 7 & 211151213 & 112 & 7 & 11 & 4\end{array}$
-
-\begin{center}
-\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-108}
-\end{center}
-
-%$\mathrm{b}_{\text {जiு }} 1: \quad *$
-$\mathrm{b}_{\text {w}} 1: \quad *$
-$\mathrm{a}=4:$
-
-$\mathrm{b}_{\bar{y}=7} 7$
-
-$\mathrm{b}_{\mathrm{y}=12:}$
-
-\begin{itemize}
-  \item 
-\end{itemize}
-
-$*$
-
-$\$$
-
-$x$
-
-$k$
-
-$*$
-
-\subsection*{Summary}
-Methods for cyclic production of both arbitrary values and of Boolean states has been presented. Cases $\mathrm{N}=\{2,3,4,6,7\}$ were treated in detail. The extensive C-code variants provided in the appendices make a useful set of additions to the graphics programmer's bag of tricks.
+\begin{table}
+%\tiny
+%\resizebox{\textwidth}{10mm}{
+\setlength{\tabcolsep}{1mm}{%控制单元格前后间距间接控制单元格宽度
+\begin{tabular}{ccccccccccccccccccccccccc}
+a :& 1& 15& 2& 3& 7& 12& 5& 3& 2& 15& 3& 4& 9& 7& 2& 11& 15& 12& 13& 1& 12& 7& 11& 4  \\ 
+b :& 2& 13& 15& 12& 11& 7& 2& 1& 3& 12& 15& 11& 2& 5& 7& 12& 3& 15& 2& 9& 11& 12& 7& 3\\
+\hline 
+b=1 :& * & • & • & • & • & • & • & • & • & • & • & • & • & • & • & • & • & • & • & • & • & • & • \\ 
+a=4 :& • & • & • & • & • & • & • & • & • & • & • & • & * & • & • & • & • & • & • & • & • & • & &* \\ 
+b=7 :& • & • & • & • & • & * & • & • & • & • & • & • & • & • & * & • & • & • & • & • & • & • & * \\ 
+b=12 :& • & • & • & * & • & • & • & • & • & * & • & • & • & • & • & * & • & • & • & • & • & * & • \\
+\end{tabular} 
+}
+\end{table}
+\subsection*{总结}
+给出了循环生成任意值和布尔状态的方法。对$N=\{2,3,4,6,7\}$的情况进行了详细的处理。附录中提供的大量c代码变体为图形程序员的技巧包提供了一组有用的补充。
 
 See also G1, 436.
 
+\newpage
+\section{一个通用的像素选择机制}
 \begin{center}
-\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-109}
+\small{
+Alan W. Paeth\\
+NeuralWare Incorporated\\
+Pittsburgh, Pennsylvania}
 \end{center}
 
-\section*{A GENERIC PIXEL SELECTION }
- MECHANISM\begin{center}
-\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-109(1)}
-\end{center}
+反转帧缓冲区像素的颜色是突出显示区域的常用方法。一个有用的反转函数提供了视觉上不同的颜色对。在较新的硬件上，查找表(映射像素的外观)是通过窗口输入的，引入了空间依赖性。这给“最佳”函数的设计带来了负担。这个宝石提供了一个简单的先验解决方案，可以保证视觉上不同的颜色对，尽管算法仍然不知道它们的最终外观。典型的用途是创建屏幕范围、窗口不变的工具，例如用于显示“快照”的系统游标或选择矩形。
 
-Reversing the colors of a frame buffer's pixels is a common way to highlight a region. A useful reversal function provides color pairs that are visually distinct. On newer hardware, lookup tables (which map a pixel's appearance) are keyed by window, introducing spatial dependence. This burdens the design of a "best" function. This gem offers a simple a priori solution that guarantees visually distinct color pairs, though their eventual appearance remains unknown to the algorithm. Typical use is in creating screen-wide, window-invariant tools, such as system cursors or selection rectangles for display "snapshots."
+一个有用的反求函数$F$在像素$p$上满足两个代数条件:$F(F(p))=p$和$F(p) \mu$ p。第一个条件保证函数是它自己的逆函数。第二个关键是保证任何颜色对中的两个元素“不几乎相等”，使它们在视觉上不同。对于一位像素，互补(位切换)是明显的解决方案。在更高的精度下，所有位的(ones)补变成了一个算术运算:$F(p)=\operatorname{not}(p)=-1-p$在2的补运算下(Paeth, 1991)。对于$0 \leq c<1$，这已经被推广(Newman和Sproull, 1979)为$F_{c}(p)=\operatorname{frac}(c-p)$。这不能满足第二个条件:对于参数c，值c/ 2的像素映射到它自己。几何上，单位区间已经显示(通过c)，并映射到原始区间，从而引入一个静止点。
 
-A useful reversing function $F$ on pixel $p$ satisfies two algebraic criteria: $F(F(p))=p$ and $F(p) \mu$ p. The first assures that the function is its own inverse. The second is crucial in guaranteeing that the two elements in any color pair are "not nearly equal," leaving them visually distinct. For one-bit pixels, complementation (bit toggle) is the obvious solution. At higher precision, the (ones) complement of all bits becomes an arithmetic operation: $F(p)=\operatorname{not}(p)=-1-p$ under two's complement arithmetic (Paeth, 1991). This has been generalized (Newman and Sproull, 1979) for $0 \leq c<1$ as $F_{c}(p)=\operatorname{frac}(c-p)$. This fails the second criterion: For parameter c a pixel of value c/ 2 maps onto itself. Geometrically, the unit interval has been displayed (by c) and mirrored onto the original interval, thereby introducing a stationary point.
+在调色板系统中使用的解决方案(Higgins和Booth, 1986)回到了逻辑运算作。给定一个二进制整数，它定义了沿区间的离散位置，仅最上面的位的位互补交换区间的上下半部分，而没有任何镜像。任何颜色对中的像素现在都被间隔距离的一半取代，以保证不同的颜色。对于颜色映射的像素(作为索引)，一对中的元素在映射函数的域中被移除得很远，如果颜色映射定义了单调函数，则产生的颜色在范围内也被移除——这是一种常见的情况。某些非线性非笛卡尔色图(Paeth, 1991)在这个函数下也能很好地工作，并支持简单的几何解释。
 
-The solution used in the Palette system (Higgins and Booth, 1986) returns to logical operations. Given a binary integer that defines discrete positions along an interval, bit complementation of merely the uppermost bit swaps the interval's lower and upper halves without any mirroring. The pixels in any color pair are now displaced by half the interval
-
-\section{II.6 A GENERIC PIXEL SELECTION MECHANISM}
-distance, guaranteeing distinct colors. In the case of color-mapped pixels (which serve as indices), elements in a pair are far removed in the domain of the mapping function, yielding colors likewise removed in the range should the color map define a monotonic function-a common case. Certain nonlinear non-Cartesian color maps (Paeth, 1991) also work well under this function and support a simple geometric interpretation.
-
-The generic function may now be constructed by making simple assumptions. The pixel precisions of monochromatic channels on typical framebuffers are one, four, or eight bits. The operation
-
+现在可以通过做一些简单的假设来构造泛型函数。典型帧缓冲器上单色通道的像素精度为1位、4位或8位。操作
 $$
-\text { macro bwpixflip }(\mathrm{x}) \quad \mathrm{x}:=\mathrm{x} \text { bit-xor } 133 \text { hex } 85
+\text { \textbf{macro} bwpixflip }(\mathrm{x}) \quad \mathrm{x}:=\mathrm{x} \textbf{ bit-xor } 133 \qquad \textit { hex  85}
 $$
+在不知道使用精度的情况下，对最上面的位进行补位。当底层像素精度较低时，切换高阶位无关紧要，或者被硬件写掩码的动作压制。相反，在高精度上的操作，像素将补充额外的低精度位，但这些被充分去除会产生很大的后果。
 
-complements the topmost bit in all cases without knowledge of the precision in use. When the underlying pixel is of lower precision, toggling the higher-order bits is of no consequence or is squelched by action of a hardware write mask. Conversely, operation upon a high precision, pixel will complement additional low-precision bits, but these are sufficiently removed to be of much consequence.
-
-For RGB pixels, three copies of hexadecimal 85 assures operation on three adjacent channels. This also introduces a toggle at bit 12, a further benefit on hardware providing extended monochromatic precision or color table indexing. The generic color reverse function is
-
+对于RGB像素，十六进制85的三个副本确保在三个相邻通道上操作。这还在第12位引入了一个切换，在硬件上提供了扩展的单色精度或颜色表索引。通用的颜色反转函数是
 $$
-\text { macro pixelflip(x) } \quad \mathrm{x}:=\mathrm{x} \text { bit-xor } 8750469 \text { hex } 858585
+\text { \textbf{macro} pixelflip(x) } \quad \mathrm{x}:=\mathrm{x} \textbf { bit-xor } 8750469 \qquad\textit { hex  858585}
 $$
+操作的三次使用将沿着每个颜色轴交换一半的单位间隔。从几何上看，这表示在单位颜色立方体中围绕中层灰色中心点$\left(\frac{1}{2},\frac{1}{2},\frac{1}{2}\right)$的八个子立方体的变换。在非魔方的方式下，每个立方体的朝向被保留(图2.6.1a)。在第一性原理“xor - 1”的情况下(未显示)，八个立方体的附加中心反转反转了整个固体，并且在中间灰色位置重新引入了不希望出现的静止点。
 
-Threefold use of the operation swaps halves of the unit interval along each color axis. Geometrically, this represents a shuffling of eight subcubes within the unit color cube about the central point $\left(\frac{1}{2} \frac{1}{2} \frac{1}{2}\right)$ of midlevel gray. In non-Rubik fashion, the orientation of each cubelet is preserved (fig. 1a). In the first-principles "xor - 1" case (not shown) an additional central inversion of the eight cubelets inverts the entire solid and the undesirable stationary point is reintroduced at the mid-gray position.
-
-Finally, it is often advantageous to leave the blue channel uncomplemented. When blue occupies the uppermost pixel bits (as on the Adage/ Ikonas or SGI/ Iris), complementation of the lower 16 bits defining the red and green channels still occurs; all monochromatic and lookup cases (in which pixel precision never exceeds 16 bits) are also
-
-\section{II.6 A GENERIC PIXEL SELECTION MECHANISM}
-\begin{center}
+\begin{figure}[htbp]
 \includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-111}
-\end{center}
+\caption{•}
+\end{figure}
 
-Figure 1
-
-covered implicitly. The alternate generic macro is
-
+最后，不补充蓝色通道通常是有利的。当蓝色占据最上面的像素位(如Adage/ Ikonas或SGI/ Iris)时，定义红色和绿色通道的下16位的互补仍然发生;所有单色和查找情况(像素精度从不超过16位)也隐含地涵盖。另一个通用宏是
 $$
-\text { macro pixelflip2(x) } \quad \mathrm{x}:=\mathrm{x} \text { bit-xor } 34181 \text { hex } 8585
+\text { \textbf{macro} pixelflip2(x) } \quad \mathrm{x}:=\mathrm{x} \textbf { bit-xor } 34181 \textit { hex  8585}
 $$
-
-For 24-bit color, preservation of blue means that subcubes no longer swap through central inversion (Fig. la), but are instead rotated a half-turn about the blue axis in "Ferris-wheel" fashion (lb). This creates a pair of opponent colors (red, green) for which the human visual system is highly responsive, plus pairs (blue, white), (cyan, magenta) and (yellow, black). The alternate macro supports the use of short, 16-bit integers in the reversal.
+对于24位颜色，保留蓝色意味着子立方体不再通过中心反转交换(图la)，而是以“摩天轮”方式围绕蓝色轴旋转半圈(lb)。这就产生了一对对立的颜色(红、绿)，人类的视觉系统对它们的反应非常灵敏，再加上一对(蓝、白)、(青色、品红)和(黄、黑)。备用宏支持在反转中使用短的16位整数。
 
 See also G1, 215; G1, 219; G1, 233; G1, 249.
 
-\section{NONUNIFORM RANDOM POINT SETS VIA WARPING}
+\newpage
+\section{经扭曲的非均匀随机点集}
 \begin{center}
-\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-112}
+\small{
+Peter Shirley\\
+Indiana University\\
+Bloomington, Indiana}
 \end{center}
 
-We often want to generate sets of random or pseudorandom points on the unit square for applications such as distribution ray tracing. There are several methods for doing this, such as jittering and Poisson disk sampling. These methods give us a set of $\mathrm{N}$ reasonably equidistributed points on the unit square: $\left(u_{1}, v_{1}\right)$ through $\left(u_{N^{\prime}}, v_{N}\right)$.
+我们经常希望在单位正方形上生成随机或伪随机点集，用于分布射线跟踪等应用。有几种方法可以做到这一点，例如抖动和泊松盘采样。这些方法给出了一组在单位正方形上合理分布的$\mathrm{N}$点:$\left(u_{1}, v_{1}\right)$到$\left(u_{N}, v_{N}\right)$。
 
-Sometimes, our sampling space may not be square (e.g., a circular lens) or may not be uniform (e.g., a filter function centered on a pixel). It would be nice if we could write a mathematical transformation that would take our equidistributed points $\left(\mathrm{u}_{\mathrm{i}}, \mathrm{v}_{\mathrm{i}}\right)$ as input, and output a set of points in our desired sampling space with our desired density. For example, to sample a camera lens, the transformation would take $\left(\mathrm{u}_{\mathrm{i}}, \mathrm{v}_{\mathrm{i}}\right)$ and output $\left(r_{i}, \theta_{i}\right)$ such that the new points were approximately equidistributed on the disk of the lens.
+有时，我们的采样空间可能不是方形的(例如，圆形透镜)或可能不是均匀的(例如，以像素为中心的滤波函数)。如果我们能写一个数学变换，将我们的等分布点$\left(\mathrm{u}_{\mathrm{i}}, \mathrm{v}_{\mathrm{i}}\right)$作为输入，并以期望的密度在期望的采样空间中输出一组点，那就太好了。例如，要对一个相机镜头进行采样，变换将取$\left(\mathrm{u}_{\mathrm{i}}, \mathrm{v}_{\mathrm{i}}\right)$并输出$\left(r_{i}, \theta_{i}\right)$，使新点在镜头的圆盘上近似均匀分布。
 
-It turns out that such transformation functions are well known in the field of Monte Carlo integration. A table of several transformations useful for computer graphics is given in Table I. The method for generating such transformations is discussed for the rest of this article. Note that several of these transformations can be simplified for simple densities. For example, to generate directions with a cosine distribution, use the Phong density with $\mathrm{n}=1$. To generate points on the unit hemisphere, use the sector on the unit sphere density with $\theta_{1},=0, \theta_{2}=\pi / 2, \varphi_{1}=0$, and $\varphi_{2}=\pi$.
+结果表明，这种变换函数在蒙特卡罗积分领域是众所周知的。表2.7.1给出了对计算机图形学有用的几种转换的表格。本文其余部分将讨论生成这种转换的方法。请注意，其中一些转换可以简化为简单密度。例如，要生成余弦分布的方向，使用Phong密度和$\mathrm{n}=1$。要在单位半球上生成点，使用单位球密度上的扇区，带$\theta_{1'}=0, \theta_{2}=\pi / 2, \varphi_{1}=0$和$\varphi_{2}=\pi$。
 
-For Monte Carlo methods we must often generate random points according to some probability density function, or random rays according to a directional probability density. In this section a method for one and two dimensional random variables is described. The discussion closely follows that of Shreider (1966).
+对于蒙特卡罗方法，我们必须经常根据某个概率密度函数生成随机点，或根据某个方向概率密度生成随机射线。在本节中，将描述一种一维和二维随机变量的方法。本文的讨论紧跟Shreider(1966)的讨论。
 
-\section{II.7 NONUNIFORM RANDOM POINTS VIA WARPING}
-Table 1. Some Useful Transformation. ${ }^{a}$.
+\begin{table}[htbp]
+\small{\caption{(符号$u, v$和$w$表示范围超过[0,1]的均匀分布随机变量的实例。)}}
+\centering
+\includegraphics[totalheight=4in]{2022_11_30_0cbb01a33d99487fc27fg-113}
+\end{table}
 
-\begin{center}
-\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-113}
-\end{center}
-
-a The symbols $u, v$, and $w$ represent instances of uniformly distributed random variables ranging over [0, 1].
-
-If the density is a one-dimensional $\mathrm{f}(\mathrm{x})$ defined over the interval $\mathrm{x} \in[\mathrm{a}, \mathrm{b}]$, then we can generate random numbers $\alpha_{\mathrm{i}}$ that have density $\mathrm{f}$ from a set of uniform random numbers $\xi_{\mathrm{i}}$, where $\xi_{\mathrm{i}} \in[0,1]$. To do this we need the probability distribution function $\mathrm{F}(\mathrm{x})$ :
-
-$$
+如果密度是在区间$\mathrm{x} \in[\mathrm{a}, \mathrm{b}]$上定义的一维$\mathrm{f}(\mathrm{x})$，那么我们可以从一组均匀随机数$\xi_{\mathrm{i}}$中生成具有密度$\mathrm{f}$的随机数$\alpha_{\mathrm{i}}$，其中$\xi_{\mathrm{i}} \in[0,1]$。为此，我们需要概率分布函数$\mathrm{F}(\mathrm{x})$:
+\begin{align}
 F(x)=\int_{a} f\left(x^{\prime}\right) d \mu\left(x^{\prime}\right)
-$$
-
-\section{II.7 NONUNIFORM RANDOM POINTS VIA WARPING}
-To get $\alpha_{\mathrm{i}}$ we simply transform $\xi_{\mathrm{i}}$ :
-
+\end{align}
+要得到$\alpha_{\mathrm{i}}$，只需转换$\xi_{\mathrm{i}}$:
 $$
 \alpha_{\mathrm{i}}=\mathrm{F}^{-1}\left(\mathrm{x}_{\mathrm{i}}\right) \text {, }
 $$
+其中$\mathrm{F}^{-1}$是$\mathrm{F}$的倒数。如果$\mathrm{F}$不是解析可逆的，那么数值方法就足够了，因为所有有效的概率分布函数都存在一个逆。
 
-where $\mathrm{F}^{-1}$ is the inverse of $\mathrm{F}$. If $\mathrm{F}$ is not analytically invertible, then numerical methods will suffice because an inverse exists for all valid probability distribution functions.
+如果我们有一个二维密度$(\mathrm{x}, \mathrm{y})$定义在[a, b: c, d]上，那么我们需要二维分布函数:
 
 If we have a two-dimensional density $(\mathrm{x}, \mathrm{y})$ defined on [a, b: c, d], then we need the two-dimensional distribution function:
 

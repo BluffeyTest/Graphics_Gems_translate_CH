@@ -18,6 +18,7 @@
 \usepackage[centerlast]{caption}
 \counterwithin{figure}{section} %图按照章节编号
 \counterwithin{equation}{section} %公式按照章节编号
+\counterwithin{table}{section} %表按照章节编号
 %\usepackage{fourier}
 \usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
 
@@ -38,6 +39,25 @@
 \newcommand{\hsp}{\hspace{20pt}}
 \titleformat{\chapter}{\Huge\bfseries}{第\,\thechapter\,章\hsp\textcolor{gray75}{|}\hsp}{0pt}{\Huge\bfseries}
 
+% 更改目录的章显示
+\usepackage{titletoc}
+\titlecontents{chapter}[0pt]{\addvspace{1.5pt}\filright\bf}%
+               {\contentspush{第\,\thecontentslabel\,章\quad}}%
+               {}{\titlerule*[8pt]{.}\contentspage}
+
+% 更改页眉页脚为第几章形式
+%\usepackage{fancyhdr}%导入fancyhdr包
+%\pagestyle{fancy}
+%\fancyhead{} % 初始化页眉
+%\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+\renewcommand{\chaptermark}[1]{\markboth{\begin{CJK}{UTF8}{gkai}第\,\thechapter\,章\, #1\end{CJK}}{}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection\, #1}}
+
+
+%\fancyhead[LE]{\textsl{\rightmark}}
+%\fancyhead[RO]{\textsl{\leftmark}}
+%\renewcommand{\sectionmark}[1]{\markright{\thesection\,节\, #1}}
+%\renewcommand{\chaptermark}[1]{\markright{第\,\thechapter\,章\, #1}{}}
 
 %c++代码显示环境
 \usepackage{listings}
@@ -50,10 +70,14 @@
 %\usepackage{algorithmic}
 
 %更改目录
-%\renewcommand{\contensname}{目录}
+\renewcommand{\contentsname}{目录}
 
 % 更改算法显示为中文
 \renewcommand{\algorithmcfname}{算法}
+
+%更改图表的显示
+\renewcommand{\figurename}{图}
+\renewcommand{\tablename}{表}
 
 \begin{document}
 \begin{CJK}{UTF8}{gkai}
