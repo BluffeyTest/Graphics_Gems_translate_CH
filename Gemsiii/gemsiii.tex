@@ -39,6 +39,11 @@
 \newcommand{\hsp}{\hspace{20pt}}
 \titleformat{\chapter}{\Huge\bfseries}{第\,\thechapter\,章\hsp\textcolor{gray75}{|}\hsp}{0pt}{\Huge\bfseries}
 
+\makeatletter %使\subsection中的内容左对齐
+\renewcommand{\subsection}{\@startsection{subsection}{2}{0mm}
+  {-\baselineskip}{0.5\baselineskip}{\bf\leftline}}
+
+
 % 更改目录的章显示
 \usepackage{titletoc}
 \titlecontents{chapter}[0pt]{\addvspace{1.5pt}\filright\bf}%

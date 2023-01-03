@@ -890,253 +890,183 @@ $$
 其中$\mathrm{F}^{-1}$是$\mathrm{F}$的倒数。如果$\mathrm{F}$不是解析可逆的，那么数值方法就足够了，因为所有有效的概率分布函数都存在一个逆。
 
 如果我们有一个二维密度$(\mathrm{x}, \mathrm{y})$定义在[a, b: c, d]上，那么我们需要二维分布函数:
+\begin{align}
+F(x, y)=\int_{c}^{y} \int_{a}^{x} f\left(x^{\prime}, y^{\prime}\right) d \mu\left(x^{\prime}, y^{\prime}\right) .
+\end{align}
+我们首先使用边缘分布$\mathrm{F}(\mathrm{x}, \mathrm{d})$选择$x_i$，然后根据$F\left(x_{i}, y\right) / F\left(x_{i}, d\right)$选择$y_{i}$。如果$F(x, y)$是可分离的(可表示为$g(\mathrm{x}) \mathrm{h}(\mathrm{y}))$，则一维技术可用于每个维度。
 
-If we have a two-dimensional density $(\mathrm{x}, \mathrm{y})$ defined on [a, b: c, d], then we need the two-dimensional distribution function:
-
+例如，为了选择反射射线方向进行分区计算或分布式射线跟踪，我们可以将问题看作是在单位球或半球上选择点(因为每个射线方向可以表示为球上的一个点)。例如，假设我们想要根据密度来选择射线
+\begin{align}
+p(\theta, \phi)=\frac{n+1}{2 \pi} \cos ^{n} \theta,
+\end{align}
+其中$\mathrm{n}$是一个Phong-like指数指数；$\theta$是与曲面法线的夹角，$\theta \in[0, \pi / 2]$(在上半球);$\phi$是方位角$(\phi \in[0,2 \pi])$。分布函数为
+\begin{align}
+P(\theta, \phi)=\int_{0}^{\varphi} \int_{0}^{\theta} \mathrm{p}\left(\theta, \varphi^{\prime}\right) \sin \theta' \mathrm{d} \theta' \mathrm{d} \phi^{\prime} .
+\end{align}
+$\sin \theta$项的产生是因为$\mathrm{d} \omega=\sin \theta \mathrm{d} \theta \mathrm{d} \varphi$在球面上。当发现边缘密度时，$p$(如预期的那样)是可分离的，我们发现$\left(r_{1}, r_{2}\right)$均匀随机数可以被变换到一个方向
+\begin{align}
+(\theta, \phi)=\left(\arccos \left(\left(1-r_{1}\right)^{1 /(n+1)}\right), 2 \pi r_{2}\right) .
+\end{align}
+通常，我们希望一个方向$(\theta, \phi)$对是关于某个单位向量$\mathrm{y}$的(而不是$\mathrm{z}$轴)。要做到这一点，我们可以首先将角度转换为单位向量$a$:
 $$
-F(x, y)=\int_{c}^{y} \int_{a}^{\prime} f\left(x^{\prime}, y^{\prime}\right) d \mu\left(x^{\prime}, y^{\prime}\right) .
+a=(\cos \phi \sin \theta, \sin \phi \sin \theta, \cos \theta) .
 $$
-
-We first choose an $\mathrm{x}_{\mathrm{i}}$ using the marginal distribution $\mathrm{F}(\mathrm{x}, \mathrm{d})$, and then choose $y_{i}$ according to $F\left(x_{i}, y\right) / F\left(x_{i}, d\right)$. If $F(x, y)$ is separable (expressable as $g(\mathrm{x}) \mathrm{h}(\mathrm{y}))$, then the one-dimensional techniques can be used on each dimension.
-
-As an example, to choose reflected ray directions for zonal calculations or distributed ray tracing, we can think of the problem as choosing points on the unit sphere or hemisphere (since each ray direction can be expressed as a point on the sphere). For example, suppose that we want to choose rays according to the density
-
+然后，我们可以将$a$转换为关于$\psi$的$a'$，方法是将a乘以旋转矩阵$\mathrm{R}\left(a'=Ra\right.)$ 。这个旋转矩阵写起来很简单:
 $$
-\mathrm{p}(\theta, \varphi)=\frac{\mathrm{n}+1}{2 \pi} \cos ^{\mathrm{n}} \theta,
-$$
-
-where $\mathrm{n}$ is a Phong-like exponent; $\theta$ is the angle from the surface normal and $\theta \in[0, \pi / 2]$ (is on the upper hemisphere); and $\varphi$ is the azimuthal angle $(\varphi \in[0,2 \pi])$. The distribution function is
-
-$$
-\mathrm{P}(\theta, \varphi)=\int_{0}^{\varphi} \int_{0}^{\theta} \mathrm{p}\left(\theta, \varphi^{\prime}\right) \sin \theta \mathrm{d} \theta \mathrm{d} \varphi^{\prime} .
-$$
-
-The $\sin \theta$ term arises because $\mathrm{d} \omega=\sin \theta \mathrm{d} \theta \mathrm{d} \varphi$ on the sphere. When the marginal densities are found, $p$ (as expected) is separable, and we find that a $\left(r_{1}, r_{2}\right)$ pair of uniform random numbers can be transformed to a direction by
-
-$$
-(\theta, \varphi)=\left(\arccos \left(\left(1-r_{1}\right)^{1 /(n+1)}\right), 2 \pi r_{2}\right) .
-$$
-
-\section{II.7 NONUNIFORM RANDOM POINTS VIA WARPING}
-Typically, we want a directional $(\theta, \varphi)$ pair to be with respect tosomeunit vector $\mathrm{y}$ (as opposed to the $\mathrm{z}$ axis). To do this we can first convert the angles to a unit vector a:
-
-$$
-\mathrm{a}=(\cos \varphi \sin \theta, \sin \varphi \sin \theta, \cos \theta) .
-$$
-
-We can then transform a to be an a' with respect to $\psi$ by multiplying a by a rotation matrix $\mathrm{R}\left(\mathrm{a}^{\prime}=\mathrm{Ra}\right.$ ). This rotation matrix is simple to write down:
-
-$$
-R=\begin{array}{lll}
+R=\begin{bmatrix}
 u_{x} & v_{x} & w_{x} \\
 u_{y} & v_{y} & w_{y} \\
 u_{z} & v_{z} & w_{z}
-\end{array}
+\end{bmatrix},
 $$
-
-where $u=\left(u_{x^{\prime}} u_{y^{\prime}} u_{z}\right), v=\left(v_{x^{\prime}} v_{y^{\prime}} v_{z}\right), w=\left(w_{x^{\prime}} w_{y^{\prime}}, w_{z}\right)$, form a basis (an orthonormal set of unit vectors where $u=\mathrm{v} \times \mathrm{w}, \mathrm{v}=\mathrm{w} \times \mathrm{u}$, and $\mathrm{w}=\mathrm{u} \times \mathrm{v}$ ) with the constraint that $\mathrm{w}$ is aligned with $\psi$ :
-
+其中$u=\left(u_{x}, u_{y}, u_{z}\right), v=\left(v_{x}, v_{y}, v_{z}\right), w=\left(w_{x^{\prime}} w_{y^{\prime}}, w_{z}\right)$，形成一个基(一个单位向量的标准正交集，其中$u=v\times w, v=w\times u$, 和 $w=u\times v$)，形成一个约束$w$与$\psi$对齐的基。:
 $$
 \mathrm{w}=\frac{\psi}{|\psi|} .
 $$
-
-To get $u$ and $v$, we need to find a vector $t$ that is not colinear with $w$. To do this simply set $t$ equal to $\mathrm{w}$ and change the smallest magnitude component of $\mathrm{t}$ to one. The $\mathrm{u}$ and $\mathrm{v}$ follow easily:
-
+为了得到$u$和$v$，我们需要找到一个与$w$不相交的向量$t$。要做到这一点，只需将$t$设为$w$，并将$t$的最小幅度分量改为1。$u$和$v$很容易得到。
 $$
 \begin{aligned}
-&\mathrm{u}=\frac{\mathrm{t} \times \mathrm{w}}{|\mathrm{t} \times \mathrm{w}|}, \\
-&\mathrm{v}=\mathrm{w} \times \mathrm{u} .
+&u=\frac{t \times w}{|t \times w|}, \\
+&v=w\times u .
 \end{aligned}
 $$
+这个技术系列对许多采样应用非常有用。不幸的是，一些抽样空间（如十二面体的表面）并不能自然地使用本宝石中的方法来处理。这时就需要特殊的目的，或者作为最后的手段，需要拒绝技术。
 
-This family of techniques is very useful for many sampling applications. Unfortunately, some sampling spaces (e.g., the surface of a dodecahedron) are not naturally dealt with using the methods in this gem. Special purpose or, as a last resort, rejection techniques are then called for.
+
 
 See also G1, 438.
 
+\newpage
+\section{四维及四维外的叉乘}
 \begin{center}
-\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-116}
+\small{
+Ronald N. Goldman\\
+Rice University\\
+Houston, Texas}
 \end{center}
 
-\section{CROSS PRODUCT IN FOUR DIMENSIONS AND BEYOND}
-\begin{center}
-\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-116(1)}
-\end{center}
+\subsection*{介绍}
+叉积是上帝赐予人类的伟大礼物之一。它在数学、物理、工程，当然还有计算机图形学方面有很多应用。法向量、旋转、旋度、角动量、扭矩和磁场都利用叉乘。
 
-\section{Introduction}
-Cross product is one of the gods' great gifts to mankind. It has many applications in mathematics, physics, engineering, and, of course, computer graphics. Normal vectors, rotations, curl, angular momentum, torque, and magnetic fields all make use of the cross product.
-
-Given two linearly independent vectors $\mathrm{u}$ and $\mathrm{v}$ in three dimensions, their cross product is the vector $u \times v$ perpendicular to the plane of $u$ and $\mathrm{v}$, oriented according to the right-hand rule, with length equal to $|\mathrm{u}||\mathrm{v}| \sin \theta$, where $\Theta$ is the angle between $u$ and $v$. In rectangular coordinates, the cross product can be computed from the simple determinant formula
-
+在三维空间中给定两个线性无关的向量$u$和$v$，它们的叉积是垂直于$u$和$v$平面的向量$u \times v$，根据右手规则定向，其长度等于$|u||v| \sin \Theta$，其中$\Theta$是$u$和$v$之间的角度。在直角坐标系中中，叉积可以通过简单的行列式计算出来
 $$
 u \times v=\left|\begin{array}{ccc}
 \mathbf{i} & \mathbf{j} & \mathbf{k} \\
-\mathrm{u}_{1} & \mathrm{u}_{2} & \mathrm{u}_{3} \\
-\mathrm{v}_{1} & \mathrm{v}_{2} & \mathrm{v}_{3}
+u_{1} & u_{2} & u_{3} \\
+v_{1} & v_{2} & v_{3}
 \end{array}\right| .
 $$
-
-Equivalently,
-
+相当于,
 $$
-u \times v=\left(u_{2} v_{3}-u_{3} v_{2}, u_{3} v_{1}-u_{1} v_{3^{\prime}} u_{1} v_{2^{\prime}}-u_{2} v_{1}\right) \text {. }
+u \times v=\left(u_{2} v_{3}-u_{3} v_{2}, u_{3} v_{1}-u_{1} v_{3}, u_{1} v_{2}-u_{2} v_{1}\right) \text {. }
 $$
+乍一看，叉乘似乎是三维的产物。在三维空间中，由两个向量决定的平面法线方向是唯一的，但在四维空间中，有一整个平面的向量都是与任何给定平面法向的。因此，如何在四维空间中定义两个向量的叉乘是不清楚的。那么在四维及四维以外的空间里叉乘的类似物是什么呢?这个宝石的目标就是回答这个问题。
 
-At first glance, cross product seems to be an artifact of three dimensions. In three dimensions the normal direction to the plane determined by two vectors is unique up to sign, but in four dimensions there are a whole plane of vectors normal to any given plane. Thus, it is unclear how to define the cross product of two vectors in four dimensions. What then
+\subsection*{张量积}
+有一种看待叉乘的方法比标准定义更有指导意义而且很容易推广到四维或四维以上。为了理解这种方法，我们需要从两个向量的张量积的概念开始。
 
-\section{II.8 CROSS PRODUCT IN FOUR DIMENSIONS AND BEYOND}
-is the analogue of the cross product in four dimensions and beyond? The goal of this gem is to answer this question.
-
-\section{Tensor Product}
-There is a way to look at the cross product that is more instructive than the standard definition and that generalizes readily to four dimensions and beyond. To understand this approach, we need to begin with the notion of the tensor product of two vectors $u$, v.
-
-The tensor product $u \otimes v$ is defined to be the square matrix
-
+张量积$u \otimes v$被定义为方阵
 $$
-\mathrm{u} \otimes \mathrm{v}=\mathrm{u}^{\mathrm{t}} * \mathrm{v},
+u \otimes v=u^t * v,
 $$
-
-where the superscript $\mathrm{t}$ denotes transpose and $*$ denotes matrix multiplication. Equivalently,
-
+其中上标$t$表示转置，$*$表示矩阵乘法。同样,
 $$
 (u \otimes v)_{i j}=\left(u_{i}, v_{j}\right) .
 $$
-
-Notice that for any vector $\mathrm{w}$,
-
+注意，对于任意向量w，
 $$
 \mathrm{w}(\mathrm{u} \otimes \mathrm{v})=(\mathrm{w} \cdot \mathrm{u}) \mathrm{v} .
 $$
+因此，张量积与点积密切相关。
 
-Thus, the tensor product is closely related to the dot product.
-
-Like dot product, the tensor product makes sense for two vectors of arbitrary dimension. Indeed, the tensor product shares many of the algebraic properties of the dot product. However, unlike the dot product, the tensor product is not communative. That is, in general,
+像点积一样，张量积对于任意维的两个向量都有意义。的确，张量积具有点积的许多代数性质。然而，与点积不同，张量积不是可交换的。也就是说，总的来说，
 
 $$
-u \otimes v \neq v \otimes u \quad \text { because } u_{i} v_{j} \neq u_{j} v_{i}
+u \otimes v \neq v \otimes u \quad \text { 因为 } u_{i} v_{j} \neq u_{j} v_{i}
 $$
+Goldman(1990,1991)给出了两个向量张量积在计算机图形学中的应用。
 
-Applications of the tensor product of two vectors to computer graphics are given in Goldman (1990, 1991).
-
-\section{Wedge Product}
-The wedge product of two vectors $u$ and $v$ measures the noncommutativity of their tensor product. Thus, the wedge product $u \wedge v$ is the square
-
-\section{II.8 CROSS PRODUCT IN FOUR DIMENSIONS AND BEYOND}
-matrix defined by
-
+\subsection*{楔积}
+两个向量$u$和$v$的楔积测量了它们张量积的不可交换性。因此，楔积$u \wedge v$是由定义的方阵
 $$
 u \wedge v=u \otimes v-v \otimes u .
 $$
-
-Equivalently,
-
+相当于,
 $$
 (u \wedge v)_{i j}=\left(u_{i} v_{j}-u_{j} v_{i}\right) .
 $$
+像张量积一样，楔形积定义为任意维的两个向量。还要注意，楔积和叉积有许多相同的性质。例如，从楔积定义为两个张量积之差可以很容易地直接验证:
+$$
+\begin{aligned}
+& u \wedge u=0, \\
+& u \wedge v=-v \wedge u &\text{(反交换律)},\\
+& u *(v \wedge w) \neq(u \wedge v) * w^{t} &\text{(非结合律)},\\
+& u \wedge cv=c(u \wedge v)=(cu) \wedge v, & \\
+& u \wedge(v+w)=u \wedge v+u \wedge w &\text{(分配律)},\\
+& u *(v \wedge w)+v *(w \wedge u)+w *(u \wedge v)=0 &\text{(Jacobi恒等式)},\\
+& r *(u \wedge v) * s^{t}=(r \cdot u)(s \cdot v)-(r \cdot v)(\mathrm{s} \cdot u) &\text{(Lagrange恒等式)}.
+\end{aligned}
+$$
 
-Like the tensor product, the wedge product is defined for two vectors of arbitrary dimension. Notice, too, that the wedge product shares many properties with the cross product. For example, it is easy to verify directly from the definition of the wedge product as the difference of two tensor products that:
-
-$\mathrm{u} \wedge \mathrm{u}=0$,
-
-$\mathrm{u} \wedge \mathrm{v}=-\mathrm{v} \wedge \mathrm{u}$
-
-(anticommutative),
-
-$\mathrm{u} *(\mathrm{v} \wedge \mathrm{w}) \neq(\mathrm{u} \wedge \mathrm{v}) * \mathrm{w}^{\mathrm{t}}$
-
-(nonassociative),
-
-$\mathrm{u} \wedge \mathrm{cv}=\mathrm{c}(\mathrm{u} \wedge \mathrm{v})=(\mathrm{cu}) \wedge \mathrm{v}$,
-
-$\mathrm{u} \wedge(\mathrm{v}+\mathrm{w})=\mathrm{u} \wedge \mathrm{v}+\mathrm{u} \wedge \mathrm{w}$
-
-(distributive),
-
-$\mathrm{u} *(\mathrm{v} \wedge \mathrm{w})+\mathrm{v} *(\mathrm{w} \wedge \mathrm{u})+\mathrm{w} *(\mathrm{u} \wedge \mathrm{v})=0$
-
-(Jacobi identity),
-
-$\mathrm{r} *(\mathrm{u} \wedge \mathrm{v}) * \mathrm{~s}^{\mathrm{t}}=(\mathrm{r} \cdot \mathrm{u})(\mathrm{s} \cdot \mathrm{v})-(\mathrm{r} \cdot \mathrm{v})(\mathrm{s} \cdot \mathrm{u})$
-
-(Lagrange identity).
-
-The wedge product also shares some other important properties with the cross product. The defining characteristics of the cross product are captured by the formulas
-
+楔积与叉积还具有其他一些重要的性质。叉乘的定义特征由公式得到
 $$
 \begin{gathered}
 u \cdot(u \times v)=v \cdot(u \times v)=0, \\
 |u \times v|=|u|^{2}|v|^{2} \sin ^{2} \Theta .
 \end{gathered}
 $$
-
-By the Lagrange identity, the wedge product satisfies the analogous
-
-\section{II.8 CROSS PRODUCT IN FOUR DIMENSIONS AND BEYOND}
-identities:
-
+根据Lagrange恒等式，楔积满足类似恒等式:
 $$
 \begin{aligned}
-&\mathrm{u} *(\mathrm{u} \wedge \mathrm{v}) * \mathrm{u}^{\mathrm{t}}=\mathrm{v} *(\mathrm{u} \wedge \mathrm{v}) * \mathrm{v}^{\mathrm{t}}=0, \\
-&\mathrm{u} *(\mathrm{u} \wedge \mathrm{v}) * \mathrm{v}^{\mathrm{t}}=(\mathrm{u} \cdot \mathrm{u})(\mathrm{v} \cdot \mathrm{v})-(\mathrm{u} \cdot \mathrm{v})^{2}=\left.\left.|\mathrm{u}|\right|^{2} \mathrm{v}\right|^{2} \sin ^{2} \Theta
+&u *(u \wedge v) * u^{t}=\mathrm{v} *(u \wedge v) * v^{t}=0, \\
+&u *(u \wedge v) * v^{t}=(u \cdot u)(v \cdot v)-(u \cdot v)^{2}=\left|u\right|^{2}\left| v\right|^{2} \sin ^{2} \Theta
 \end{aligned}
 $$
-
-A variant of the last identity can be generated by defining the norm of a matrix $M$ to be
-
+通过定义矩阵$M$的范数为下式，可以生成最后一个单位的变体
 $$
-|M|^{2}={ }_{2}^{1} \sum_{i j}\left(M_{i j}\right)^{2} .
+|M|^{2}=\frac{1}{2}\left\lbrace \sum_{i j}\left(M_{i j}\right)^{2} \right\rbrace .
 $$
-
-Then by direct computation it is easy to verify that
-
+通过直接计算很容易验证
 $$
 |u \wedge v|^{2}=(u \cdot u)(v \cdot v)-(u \cdot v)^{2}=|u|^{2}|v|^{2} \sin ^{2} \Theta .
 $$
-
-In addition, the cross product identity
-
+另外，叉乘恒等式
 $$
-(\mathrm{u} \times \mathrm{v}) \times \mathrm{w}=(\mathrm{w} \cdot \mathrm{u}) \mathrm{v}-(\mathrm{w} \cdot \mathrm{v}) \mathrm{u}
+(u \times v) \times w=(w \cdot u) v-(w \cdot v) u
 $$
-
-has the wedge product analogue
-
+有楔积的类似物
+%has the wedge product analogue
+\begin{align}
+w \cdot(u \wedge v)=(w \cdot u) v-(w \cdot v) u .
+\label{eq:2.8.1}
+\end{align}
+叉乘可以用来测试垂直于$u$和$v$平面的向量，因为
 $$
-\mathrm{w} \cdot(\mathrm{u} \wedge \mathrm{v})=(\mathrm{w} \cdot \mathrm{u}) \mathrm{v}-(\mathrm{w} \cdot \mathrm{v}) \mathrm{u} .
+w \times(u \times v)=0 \Leftrightarrow \mathrm{w} \perp u, v .
 $$
-
-The cross product can be used to test for vectors perpendicular to the plane of $u$ and $v$ because
-
+类似地，楔形积识别垂直于由$u$和$v$决定的平面的向量，因为通过公式\ref{eq:2.8.1}，
 $$
-\mathrm{w} \times(\mathrm{u} \times \mathrm{v})=0 \Leftrightarrow \mathrm{w} \perp \mathrm{u}, \mathrm{v} .
+w *(u \wedge v)=0 \Leftrightarrow(w \cdot u)=(w \cdot v)=0 \Leftrightarrow w \perp u, v .
 $$
-
-Similarly, the wedge product recognizes vectors perpendicular to the plane determined by $u$ and $v$ because by (1),
-
+此外，在三维空间中，
 $$
-\mathrm{w} *(\mathrm{u} \wedge \mathrm{v})=0 \Leftrightarrow(\mathrm{w} \cdot \mathrm{u})=(\mathrm{w} \cdot \mathrm{v})=0 \Leftrightarrow \mathrm{w} \perp \mathrm{u}, \mathrm{v} .
-$$
-
-Moreover, in three dimensions,
-
-$$
-u \Lambda v=\left|\begin{array}{ccc}
+u \wedge v=\left|\begin{array}{ccc}
 0 & u_{1} v_{2}-u_{2} v_{1} & u_{1} v_{3}-u_{3} v_{1} \\
 u_{2} v_{1}-u_{1} v_{2} & 0 & u_{2} v_{3}-u_{3} v_{2} \\
 u_{3} v_{1}-u_{1} v_{3} & u_{3} v_{2}-u_{2} v_{3} & 0
 \end{array}\right|
 $$
+因此，在三维空间中，楔积矩阵$u \wedge v$的分量，与叉乘向量$u \times v$的分量,在符号上是相同的。这个观察解释了为什么楔积和叉积共享如此多的代数性质。
 
-\section{II.8 CROSS PRODUCT IN FOUR DIMENSIONS AND BEYOND}
-Thus, in three dimensions the entries of the wedge product matrix $u \wedge v$ are, up to sign, the same as the components of the cross product vector $\mathrm{u} \times \mathrm{v}$. This observation explains why wedge product and cross product share so many algebraic properties.
+在三维空间中我们非常幸运。矩阵$u \wedge v$是反对称的，所以到符号为止，它只有三个唯一的分量。这个性质允许我们用向量$u \times v$来识别矩阵$u \wedge v$。然而，对于向量$u \times v$，有一些非常特殊的东西。如果$u$和$v$是正交的单位向量，则向量$u, v, u \times v$形成一个右手坐标系。但如果$\mathrm{M}$是映射$u, v$平面上向量的线性变换，则$\{u \cdot M, v \cdot M,(u \times v) \cdot M\}=\{u, v,-u \times v\}$构成一个左手坐标系。因此，$(u \cdot M) \times (v \cdot M) \neq(u \times v) \cdot M$，因此$u \times v$并不真正转换为一个向量。这个反常现象应该提醒我们，叉乘并不是一个真正的向量。事实上，叉乘变换更像张量而不是向量。
 
-In three dimensions we are really very lucky. The matrix $u \wedge v$ is antisymmetric so, up to sign, it has only three unique entries. This property allows us to identify the matrix $u \wedge v$ with the vector $u \times v$. Nevertheless, there is something very peculiar about the vector $u \times v$. If $\mathrm{u}$ and $\mathrm{v}$ are orthogonal unit vectors, then the vectors $u, v, u \times v$ form a right-handed coordinate system. But if $\mathrm{M}$ is the linear transformation that mirrors vectors in the $u, v$ plane, then $\{u \cdot M, v \cdot M,(u \times v) \cdot M\}=$ $\{u, v,-u \times v\}$ forms a left-handed coordinate system. Thus, (u $\cdot M) \times$ $(\mathrm{v} \cdot \mathrm{M}) \neq(\mathrm{u} \times \mathrm{v}) \cdot \mathrm{M}$, so $\mathrm{u} \times \mathrm{v}$ does not really transform as a vector. This anomaly should alert us to the fact that cross product is not really a true vector. In fact, cross product transforms more like a tensor than a vector.
 
 In higher dimensions we are not nearly so lucky. For example, in four dimensions the antisymmetric matrix $u \wedge v$ has, up to sign, six, not four, distinct entries. Thus, the matrix $u \wedge v$ cannot be identified with a four-dimensional vector. In $\mathrm{n}$ dimensions, the antisymmetric matrix $\mathrm{u} \wedge \mathrm{v}$ has $n(n-1) / 2$ unique entries. But $n(n-1) / 2 \neq n$ unless $n=0,3$. Thus, only in three dimensions can we identify the wedge product of two vectors with a vector of the same dimension. In general, the wedge product is an antisymmetric 2-tensor. This antisymmetric tensor shares many of the important algebraic properties of the cross product, and thus it is a natural generalization of the cross product to four dimensions and beyond.
 
-\section{Acknowledgment}
+\subsection*{Acknowledgment}
 I would like to thank Joe Warren for pointing out that the formula for the length of the cross product $u \times v$ has a direct analogue in the formula for the norm of the wedge product $u \wedge v$.
 
-
+\newpage
 \begin{center}
 \includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-121}
 \end{center}
