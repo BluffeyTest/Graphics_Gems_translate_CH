@@ -1058,34 +1058,34 @@ u_{3} v_{1}-u_{1} v_{3} & u_{3} v_{2}-u_{2} v_{3} & 0
 $$
 因此，在三维空间中，楔积矩阵$u \wedge v$的分量，与叉乘向量$u \times v$的分量,在符号上是相同的。这个观察解释了为什么楔积和叉积共享如此多的代数性质。
 
-在三维空间中我们非常幸运。矩阵$u \wedge v$是反对称的，所以到符号为止，它只有三个唯一的分量。这个性质允许我们用向量$u \times v$来识别矩阵$u \wedge v$。然而，对于向量$u \times v$，有一些非常特殊的东西。如果$u$和$v$是正交的单位向量，则向量$u, v, u \times v$形成一个右手坐标系。但如果$\mathrm{M}$是映射$u, v$平面上向量的线性变换，则$\{u \cdot M, v \cdot M,(u \times v) \cdot M\}=\{u, v,-u \times v\}$构成一个左手坐标系。因此，$(u \cdot M) \times (v \cdot M) \neq(u \times v) \cdot M$，因此$u \times v$并不真正转换为一个向量。这个反常现象应该提醒我们，叉乘并不是一个真正的向量。事实上，叉乘变换更像张量而不是向量。
+在三维空间中我们非常幸运。矩阵$u \wedge v$是反对称的，因此，从符号上看，它只有三个唯一的分量。这个性质允许我们用向量$u \times v$来识别矩阵$u \wedge v$。然而，对于向量$u \times v$，有一些非常特殊的东西。如果$u$和$v$是正交的单位向量，则向量$u, v, u \times v$形成一个右手坐标系。但如果$\mathrm{M}$是映射$u, v$平面上向量的线性变换，则$\{u \cdot M, v \cdot M,(u \times v) \cdot M\}=\{u, v,-u \times v\}$构成一个左手坐标系。因此，$(u \cdot M) \times (v \cdot M) \neq(u \times v) \cdot M$，因此$u \times v$并不真正转换为一个向量。这个反常现象应该提醒我们，叉乘并不是一个真正的向量。事实上，叉乘变换更像张量而不是向量。
 
+在高维空间中，我们就没有这么幸运了。例如，在四维空间中，反对称矩阵$u \wedge v$有，从符号上看，有六个，而不是四个，不同的分量。因此，矩阵$u \wedge v$不能用四维向量来表示。在$\mathrm{n}$维中，反对称矩阵$u \wedge v$有$n(n-1) / 2$个唯一项。但是$n(n-1) / 2 \neq n $除非$n=0,3$。因此，只有在三维中，我们才能确定两个向量与一个相同维数的向量的楔积。一般来说，楔积是一个反对称的2张量。这个反对称张量分享了叉乘的许多重要代数性质，因此它是叉乘在四维及四维以上的自然推广。
 
-In higher dimensions we are not nearly so lucky. For example, in four dimensions the antisymmetric matrix $u \wedge v$ has, up to sign, six, not four, distinct entries. Thus, the matrix $u \wedge v$ cannot be identified with a four-dimensional vector. In $\mathrm{n}$ dimensions, the antisymmetric matrix $\mathrm{u} \wedge \mathrm{v}$ has $n(n-1) / 2$ unique entries. But $n(n-1) / 2 \neq n$ unless $n=0,3$. Thus, only in three dimensions can we identify the wedge product of two vectors with a vector of the same dimension. In general, the wedge product is an antisymmetric 2-tensor. This antisymmetric tensor shares many of the important algebraic properties of the cross product, and thus it is a natural generalization of the cross product to four dimensions and beyond.
+\subsection*{鸣谢}
+我要感谢Joe Warren指出，叉乘$u \times v$的长度公式与楔形积$u \wedge v$的范数公式有直接的类似。
 
-\subsection*{Acknowledgment}
-I would like to thank Joe Warren for pointing out that the formula for the length of the cross product $u \times v$ has a direct analogue in the formula for the norm of the wedge product $u \wedge v$.
 
 \newpage
+\section{n维空间中面连通线段的生成}
 \begin{center}
-\includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-121}
+\small{
+Didier Badouel and Charles A. W\"uthrich\\
+University of Toronto\\
+Toronto, Ontario, Canada}
 \end{center}
 
-In the early days of Computer Graphics, straight line rasterization was developed to render segments onto the raster plane. Later, three-dimensional segment discretization had to be developed to keep track of the path of a ray in the object space. These algorithms generate a connected sequence that represents the segment in the discrete space; moreover, they define a path in which the directions are uniformly distributed. An extension to higher-dimensional spaces is suited for applications ranging from line generation in a time-space coordinate system to the incremental generation of a discrete simultaneous linear interpolation of any number of variables.
+在计算机图形学的早期，直线栅格化被发展到栅格平面上渲染片段。后来，必须发展三维段离散化来跟踪光线在物体空间中的路径。这些算法生成一个连通序列，表示离散空间中的段;此外，它们定义了一个方向均匀分布的路径。对高维空间的扩展适用于从时空坐标系中的直线生成到任意数量变量的离散同时线性插值的增量生成的应用。
 
-This gem presents an algorithm that generates a face-connected line segment in discrete n-dimensional spaces. In two dimensions, the algorithm introduced below coincides with any classical 4-connected straight line drawing algorithm. Among all discrete segments joining two points, this algorithm produces one in which the directions are uniformly distributed. A definition of uniform distribution is given below.
+这个宝石提出了一种在离散的n维空间中生成面连接线段的算法。在二维上，下面介绍的算法与任何经典的4连通直线绘制算法一致。在所有连接两点的离散线段中，该算法生成方向均匀分布的线段。均匀分布的定义如下。
 
-Consider an n-dimensional lattice, or hyperlattice, i.e., the set of all points $\mathrm{P}=\left(\mathrm{p}_{0}, \mathrm{p}_{1}, \ldots, \mathrm{p}_{\mathrm{n}-1}\right)$ of $\mathbf{Z}^{\mathrm{n}}$ : Neighbourhood relations can be defined between the Voronoi hypervroxel associated with each point of the hyperlattice. In fact, only voxels having a hyperface in common, i.e., corresponding to hyperlattice points having $\mathrm{n}-1$ coordinates in common, will be considered here as neighbours. In a two-dimensional lattice, such neighbourhood relation is the well-known 4 -connection, while in the three-dimensional space it leads to 6-connection. The neighbourhood relations among the hyperlattice points introduce a rasterization proce- dure for curves into the hyperlattice: A rasterization of a curve is in fact a path of neighbouring lattice points.
+考虑一个n维的晶格，或超晶格，即所有点$P=\left(p _{0}, p _{1}, \ldots, p _{n-1}\right)$的集合$\mathbf{Z}^{n}$：可以在与超晶格的每个点相关联的Voronoi超晶格之间定义邻域关系。事实上，只有拥有共同超面(hyperface)的体素，即与拥有$n-1$坐标的超晶格点对应的体素，才会被视为邻居。在二维晶格中，这种邻域关系是众所周知的4-连通，而在三维空间中则是6-连通。超晶格点之间的邻域关系为超晶格引入了曲线的栅格化过程:曲线的栅格化实际上是相邻格点的路径。
 
-Consider two hyperlattice points $P=\left(p_{0^{\prime}}, p_{1}, \ldots, p_{n-1}\right)$ and $Q=$ $\left(q_{0^{\prime}} q_{1}, \ldots, q_{n-1}\right)$. Let $n_{i}=\left|q_{i}-p_{i}\right|$ Then a face-connected shortest path between $\mathrm{P}$ and $\mathrm{Q}$ requires $\mathrm{m}=\sum \mathrm{n}_{\mathrm{i}}$ steps. The hyperline points are the points of coordinates $x_{i}=\left(q_{i}-p_{i}\right) t+p_{i}$, with $t \in[0,1]$. The parameter $t$ introduces an ordering on the points of the straight line. Consider the straight line points $P_{i, h_{1}}$ obtained for $t=h_{i} / n_{i}$, where $h_{j}=1, \ldots, n_{i}$, and order them in increasing order of their corresponding parameter value. Whenever an ambiguity occurs, and two parameter values $h_{\mathrm{j}} / \mathrm{n}_{\mathrm{i}}$ and $h_{\mathrm{j}} / \mathrm{n}_{\mathrm{j}}$ coincide, an arbitrary order has to be chosen. In other words, the segment $\mathrm{PQ}$ is subdivided into $\mathrm{n}_{\mathrm{i}}$ parts for each dimension i, and the points obtained on the straight line segment are ordered by increasing values of the parameter t. When two subdivision points coincide, the one corresponding to the smaller dimension is considered to precede the other one.
+考虑两个超晶格点$P=\left(p_{0}, p_{1}, \ldots, p_{n-1}\right)$和$Q=$ $\left(q_{0}, q_{1}, \ldots, q_{n-1}\right)$。令$n_{i}=\left|q_{i}-p_{i}\right|$则$\mathrm{P}$和$\mathrm{Q}$之间的面连通最短路径需要$\mathrm{m}=\sum n_i$步长。超线点是坐标$x_{i}=\left(q_{i}-p_{i}\right) t+p_{i}$的点，其中$t \in[0,1]$。参数$t$引入了直线上各点的顺序。考虑$t=h_{i} / n_{i}$得到的直线点$P_{i, h_{1}}$，其中$h_{j}=1, \ldots, n_{i}$，并将它们按对应参数值的递增顺序排列。当出现模糊时，两个参数值$h_{j} / \mathrm{n}_{i}$和$h_{j} / n_{j}$重合时，必须选择任意顺序。换句话说，对于每个维度i， $PQ$被细分为$n_{i}$部分，在直线段上得到的点按参数t的值递增排序。当两个细分点重合时，较小维度对应的点被认为在另一个之前。
 
-The resulting set is a finite ordered set of the segment points $P_{i, h_{i}}$, which can be renamed as $A_{0^{\prime}} A_{1}, \ldots, A_{m-1}$ Consider the finite path built by taking the sequence of directions $\left\{a_{k}\right)_{k=0, \ldots, m-1}$, such that each direction $a_{k}$ corresponds to the point $A_{k}=P_{a_{k}, 1}$, for some l. Such a path is said to be uniformly distributed with respect to the directions that constitute it. It is clear that in such a path the occurrences of the different directions that have to appear in it are as evenly spaced as possible in the chain. Moreover, if we follow the previously defined path from the point $\mathrm{P}$, the point $\mathrm{Q}$ shall be reached.
+结果集是一个有限有序的线段点$P_{i, h_{i}}$的集合，它可以被重命名为$A_{0}, A_{1}, \ldots, A_{m-1}$ 考虑通过取$\left\{a_{k}\right)_{k=0, \ldots, m-1}$来构建的有限路径，使得每个方向$A_{k} $对应于点$A_{k}=P_{A_{k}, 1}$，对于某个l，这样的路径相对于构成它的方向是均匀分布的。很明显，在这样一条路径上，必须出现在该路径上的不同方向的事件在链中尽可能均匀地间隔。此外，如果我们沿着前面定义的路径从点$P$开始，将到达点$Q$。
 
-Whenever the hyperface-connected rasterization onto the n-dimensional hyperlattice of a straight line segment joining two hyperlattice points is computed, the result is a hyperface-connected path joining the two points. This path is uniformly distributed among all directions. A simplified version of the routing algorithm can be therefore summarized as follows. For each direction $i$, an integer counter $d_{i}$ is used. In order to generate the straight line between the two points $P$ and $Q$, the values of $\mathrm{n}_{\mathrm{i}}$ are computed. Their least common multiple $\mathrm{l}=\mathrm{LCM}\left(\mathrm{n}_{\mathrm{i}}\right)$ is evaluated, ${ }^{1}$ and the values of $\mathrm{n}_{\mathrm{i}}^{\prime \prime}=1 / \mathrm{n}_{\mathrm{i}}$ are computed. To obtain only integer
-
-${ }^{1}$ In fact, either a low-complexity method in $\mathrm{O}(\mathrm{n} \log \mathrm{k})$ based on a table lookup or a simple common multiple can be used here. computations, the values of $n_{i}^{\prime}=2 n^{\prime \prime}$ are used. The cells $d_{i}$ are initialized to the value $n_{i}^{\prime} / 2$. This initialization has to be made, otherwise the path generated corresponds to another rasterization scheme. At each step, $\mathrm{n}_{\mathrm{i}}^{\prime}$ is added to the di with the smallest value, and the ith signed direction is generated. The generation procedure is repeated until all $d_{i}$ have reached the value $2 l+n_{i}^{\prime \prime}$. which is equivalent to $\forall i, d_{i} \geq 2 l$.\\
-
-
+当计算连接两个超晶格点的直线段的n维超晶格上的超面连通栅格化时，结果是连接两点的超面连通路径。这条路径在各个方向上均匀分布。因此，路由算法的简化版本可以总结如下。对于每个方向$i$，使用一个整数计数器$d_{i}$。为了生成两点$P$和$Q$之间的直线，计算$n_{i}$的值。计算它们的最小公倍数$l=\mathrm{LCM}\left(n_{i}\right)$\footnote{事实上，这里可以使用$\mathrm{O}(\mathrm{n} \log \mathrm{k})$中基于表查找或简单公倍数的低复杂度方法。}，和$\mathrm{n}_{\mathrm{i}}^{\prime \prime}=1 / \mathrm{n}_{\mathrm{i}}$的值。为了只获得整数计算，使用$n_{i}^{\prime}=2 n^{\prime \prime}$的值。单元格$d_{i}$被初始化为$n_{i}^{\prime} / 2$。必须进行初始化，否则生成的路径对应于另一个栅格化方案。每一步，$\mathrm{n}_{\mathrm{i}}^{\prime}$加到值最小的di上，生成第i个有符号的方向。重复生成过程，直到所有$d_{i}$都达到$ 2l +n_{i}^{\prime \prime}$。它等价于$\forall i, d_{i} \geq 2 l$。
 
 
 \end{CJK}
