@@ -14,241 +14,192 @@ Digital Insight\\
 Evergreen, Colorado}
 \end{center}
 
-Quaternions are handy for representing the orientation or rotation of a 3-D object (Shoemake, 1985). The "Slerp" operation (spherical linear interpolation) interpolates between two quaternions at a constant speed, using the most direct rotational path between the orientations. An animator may, however, want the interpolation to provide extra spins along the same path (complete revolutions about the same axis-see Fig. 1). This Gem gives a simple formula for doing this, derived with the help of Steven Gabriel.
+四元数用来表示3-D对象的方向或旋转非常方便(Shoemake, 1985)。“Slerp”操作(球面线性插值,spherical linear interpolation)以恒定的速度在两个四元数之间进行插值，使用方向之间最直接的旋转路径。然而，动画师可能希望插值能够沿着相同的路径提供额外的旋转(围绕同一轴的完整旋转，参见图1)。这个Gem给出了一个简单的公式，由Steven Gabriel帮助推导出来。
 
-Given two unit quaternions $\mathbf{A}$ and $\mathbf{B}$, and an interpolation parameter $\alpha$ ranging from 0 to 1 , the basic Slerp equation is
-
+给定两个单位四元数$\mathbf{A}$和$\mathbf{B}$，以及一个从0到1的插值参数$\alpha$，基本Slerp方程为
 $$
 \operatorname{Slerp}(\mathbf{A}, \mathbf{B} ; \alpha)=\mathbf{A}\left(\mathbf{A}^{-1} \mathbf{B}\right)^{\alpha} .
 $$
-
-An easier-to-implement equation uses the angle $\theta$ between the quaternions:
-
+一个更容易实现的方程使用四元数之间的角度$\theta$:
 $$
 \begin{aligned}
 \theta &=\operatorname{acos}(\mathbf{A} \cdot \mathbf{B}) \\
 \operatorname{Slerp}(\mathbf{A}, \mathbf{B} ; \alpha) &=\frac{\sin (\theta-\alpha \theta)}{\sin \theta} \mathbf{A}+\frac{\sin (\alpha \theta)}{\sin \theta} \mathbf{B} .
 \end{aligned}
 $$
-
-To include $\mathrm{k}$ additional spins, determine
-
+要包含$k$额外的旋转，请确定
 $$
-\varphi=\theta+\mathrm{k} \pi,
+\varphi=\theta+k \pi,
 $$
-
-
+\begin{figure}[htbp]
 \begin{center}
 \includegraphics[max width=\textwidth]{2022_11_30_0cbb01a33d99487fc27fg-129}
 \end{center}
+\caption{Slerp (A, B)加上$\mathrm{k}$附加自旋。}
+\label{fig_3_1_1}
+\end{figure}
 
-Figure 1. Slerp (A, B) with $\mathrm{k}$ additional spins.
-
-then
-
+接着
 $$
 \operatorname{Slerp}(\mathbf{A}, \mathbf{B}, \mathrm{k} ; \boldsymbol{\alpha})=\frac{\sin (\theta-\alpha \varphi)}{\sin \theta} \mathbf{A}+\frac{\sin (\alpha \varphi)}{\sin \theta} \mathbf{B}
 $$
 
-Figure 1 shows the effect of $\mathrm{k}$, viewing orientations $\mathbf{A}$ and $\mathbf{B}$ along the rotation axis. For $\mathrm{k}=0$, $\mathrm{f}$ equals $\mathrm{q}$, the equation reduces to the original form, and the interpolation follows the shortest circular path from A to $\mathbf{B}$. For $\mathrm{k}=+1$, one full additional rotation is generated as a goes from 0 to 1. For $\mathrm{k}=-1$, the interpolation goes the "long" way around.
+图\ref{fig_3_1_1}显示了$k$的效果，沿旋转轴查看方向$\mathbf{A}$和$\mathbf{B}$。对于$k=0$， $f$ = $\mathrm{q}$，方程化简为原始形式，插值遵循从A到$\mathbf{B}$的最短循环路径。对于$k=+1$，当a从0到1时，生成一个完整的额外旋转。对于$k=-1$，插值会绕“很长”一圈。
 
-The C implementation first checks if $\mathbf{A}$ and $\mathbf{B}$ are on opposite hemispheres $(\cos \theta<0$ ). If so, the interpolation is modified to use the negation of B (which represents the same orientation as B itself), to ensure that the shortest rotation path is taken. It also checks whether A and $\mathbf{B}$ are the same, so that $\sin \theta=0$, and no axis is defined for spinning. If $\mathbf{A}$ and $\mathbf{B}$ represent orientations 180 degrees apart, all rotation paths are the same length, but the quaternions still define an axis for spinning. Note that for a given $\mathbf{A}, \mathbf{B}$, and $\mathrm{k}$, the quantities $\theta, \varphi$, and $\sin \theta$ could be computed once outside the interpolation loop for efficiency.
+C实现首先检查$\mathbf{A}$和$\mathbf{B}$是否在相反的半球$(\cos \theta<0$)。如果是这样，插值被修改为使用$\mathbf{B}$(它表示与$\mathbf{B}$本身相同的方向)的反方向，以确保采用最短的旋转路径。它还检查A和$\mathbf{B}$是否相同，因此$\sin \theta=0$，并且没有为旋转定义轴。如果$\mathbf{A}$和$\mathbf{B}$表示相距180度的方向，则所有旋转路径的长度相同，但四元数仍然定义一个用于旋转的轴。注意，对于给定的$\mathbf{A}, \mathbf{B}$和$k$，为了提高效率，可以在插值循环外计算一次$\theta, \varphi$和$\sin \theta$。
 
-See also G1, 498.\\
-\includegraphics[max width=\textwidth, center]{2022_11_30_0cbb01a33d99487fc27fg-130}
+See also G1, 498.
 
-In another Gem (III.3) we show how to decompose linear and affine transformations of three-dimensional space into the products of scale, shears, rotations, translations, and projections. The goal of this gem is to demonstrate how to decompose an arbitrary projective transformation of three-dimensional space into simple, geometrically meaningful factors. For an alternative approach, see Thomas (1991).
 
-Let us begin by recalling the difference between linear, affine, and projective transformations. Consider a point $\mathrm{P}$ with coordinates $(\mathrm{x}, \mathrm{y}, \mathrm{z})$, and let $\mathrm{P}_{\text {new }}$ with coordinates $\left(\mathrm{x}_{\text {new }}, \mathrm{y}_{\text {new }}, \mathrm{z}_{\text {new }}\right.$ ) denote the new transformed point. Formulas that express the new coordinates $\mathrm{x}_{\text {new }}, \mathrm{y}_{\text {new }}, \mathrm{z}_{\text {new }}$ in terms of the original coordinates $\mathrm{x}, \mathrm{y}, \mathrm{z}$ are given by the following equations:
+\newpage
+\section{分解射影变换}
+\begin{center}
+\small{
+Ronald N Goldman\\
+Rice University\\
+Houston, Texas}
+\end{center}
 
-Linear:
+\subsection*{介绍}
+在另一个Gem (III.3)中，我们展示了如何将三维空间的线性和仿射变换分解为缩放、剪切、旋转、平移和投影的乘积。这个宝石的目标是演示如何将三维空间的任意射影变换分解为简单的、具有几何意义的因素。关于另一种方法，请参见Thomas(1991)。
 
-Affine:
-
-Projective:
-
+让我们先回顾一下线性变换、仿射变换和射影变换之间的区别。考虑一个点$\mathrm{P}$，坐标$(x, y, z)$，并让$\mathrm{P}_{\text{new}}$，坐标$\left(x_{\text{new}}, y_{\text{new}}, z_{\text {new}}\right.$)表示新的转换点。用原坐标$x, y, z$表示新坐标$x_{\text {new}}, y_{\text {new}}, z_{\text {new}}$的公式由以下公式给出:
 $$
 \begin{aligned}
-&\mathrm{x}_{\text {new }}=a x+b y+c z, \\
-&x_{\text {new }}=a x+b y+c z+d, \\
-&x_{\text {new }}=(a x+b y+c z+d) /(\alpha x+\beta y+\gamma z+\delta),
+\text{线性:      }&x_{\text {new }}=a x+b y+c z, \\
+\text{仿射:      }&x_{\text {new }}=a x+b y+c z+d, \\
+\text{投影:      }&x_{\text {new }}=(a x+b y+c z+d) /(\alpha x+\beta y+\gamma z+\delta),
 \end{aligned}
 $$
+用类似的公式$y_{\text {new}}$和$z_{\text {new}}$。还要记住，对于射射变换，$x_{\text {new}}, y_{\text {new}}， z_{\text {new}}$的分母是相同的。
 
-with analogous formulas for $\mathrm{y}_{\text {new }}$ and $\mathrm{z}_{\text {new }}$. Remember, too, that for projective transformations, the denominators of $\mathrm{x}_{\text {new }} \mathrm{y}_{\text {new }}, \mathrm{z}_{\text {new }}$ are identical.
-
-Linear transformations are usually represented by $3 \mathrm{X} 3$ matrices $\mathrm{L}$. A point $\mathrm{P}=(\mathrm{x}, \mathrm{y}, \mathrm{z})$ transforms according to the formula
-
+线性变换通常用$3 \times 3$ 矩阵 $\mathrm{L}$表示。点$P=(x, y, z)$根据如下公式进行转换
 $$
-\mathrm{P}_{\text {new }}=\mathrm{P} * \mathrm{~L} \text {, }
+P_{\text {new }}=P * L ,
 $$
-
-\section{III.2 DECOMPOSING PROJ ECTIVE TRANSFORMATIONS}
-where $*$ denotes matrix multiplication. Similarly, affine transformations are represented by $4 \times 3$ matrices
-
+其中$*$表示矩阵乘法。类似地，仿射变换由$4 \times 3$矩阵表示
 $$
-\mathrm{A}=\mid \begin{aligned}
-&\mathrm{L} \\
-&\mathrm{T}
-\end{aligned} .
+\mathrm{A}=\left|\begin{array}{c}
+L \\ T
+\end{array}\right|.
+$$
+这里上面的$3 \times 3$子矩阵$L$表示一个线性变换，最后一行$T$表示一个平移。让$P^{*}=(P, 1)$。然后点$P$根据公式进行转换
+$$
+P_{\text {new }}=P* * \mathrm{~A}=P * L+T
 $$
 
-Here the upper $3 \times 3$ submatrix L represents a linear transformation and the last row $\mathrm{T}$ represents a translation. Let $\mathrm{P}^{*}=(\mathrm{P}, 1)$. Then a point $\mathrm{P}$ transforms according to the formula
-
-$$
-\mathrm{P}_{\text {new }}=\mathrm{P} * * \mathrm{~A}=\mathrm{P} * \mathrm{~L}+\mathrm{T}
-$$
-
-Projective transformations can be represented by $4 \times 4$ matrices
-
+射影变换可以用$4 \times 4$矩阵表示
 $$
 \mathbf{M}=\left|\begin{array}{cc}
-\mathrm{L} & \mathrm{N}^{\mathrm{t}} \\
-\mathrm{T} & \mathrm{d}
+L & N^{\mathrm{t}} \\
+T & d
 \end{array}\right|,
 $$
-
-where the upper $3 \times 3$ submatrix $L$ represents a linear transformation, the vector $\mathrm{T}$ represents a translation, and the column $(\mathrm{N} d)^{\mathrm{t}}$ (the superscript $t$ denotes transpose) represents the projection. A homogeneous point $\mathrm{P}^{*}=(\mathrm{P}, 1)$ transforms according to the formula
-
+上面的$3 \times 3$子矩阵$L$表示一个线性变换，向量$T$表示一个平移，列$(N d)^{t}$(上标$ t $表示转置)表示投影。齐次点$P^{*}=(P, 1)$按公式变换
 $$
-\mathrm{P}_{\text {new }}=\mathrm{P} * * \mathrm{M}=(\mathrm{P} * * \mathrm{~A}) /(\mathrm{P} \cdot \mathrm{N}+\mathrm{d})=(\mathrm{P} * \mathrm{~L}+\mathrm{T}) /(\mathrm{P} \cdot \mathrm{N}+\mathrm{d}) \text {, }
+P_{\text {new }}=P^* * \mathrm{M}=(P^* * A) /(P \cdot N+d)=(P * \mathrm{~L}+T) /(P \cdot N+d) ,
 $$
+根据约定$(x, y, z, w)=(x / w, y / w, z / w)$。也就是说，按照约定，在执行矩阵乘法之后，我们除以齐次坐标$w_{\text {new }}$来恢复实际的点。投影变换在计算机图形学中非常重要，因为透视是一种投影变换(Goldman, 1990)。
 
-where by convention $(\mathrm{x}, \mathrm{y}, \mathrm{z}, \mathrm{w})=(\mathrm{x} / \mathrm{w}, \mathrm{y} / \mathrm{w}, \mathrm{z} / \mathrm{w})$. That is, by convention, after performing the matrix multiplication, we divide by the homogeneous coordinate $\mathrm{w}_{\text {new }}$ to recover the actual point. Projective transformations are very important in computer graphics because perspective is a projective transformation (Goldman, 1990).
 
-\section{First Decomposition Algorithm-Perspective in Four Dimensions}
-The standard way to factor any projective transformation of three-dimensional space is first to embed three-space into four-space, next to apply the $4 \times 4$ matrix $M$ as a linear transformation in four-space, then to
-
-\section{III.2 DECOMPOSING PROJ ECTIVE TRANSFORMATIONS}
-apply a perspective projection of four-space with the eye point at the origin and the perspective hyperplane at $\mathrm{w}=1$, and finally to project from four-space back to three-space by identifying the four-dimensional hyperplane $\mathrm{w}=1$ with standard three-dimensional space. That is, we map
-
+\subsection*{第一个分解算法——四维透视}
+分解任何三维空间的射影变换的标准方法是首先将三维空间嵌入到四维空间中，然后应用$4 \times 4$矩阵$M$作为一个四维空间中的线性变换，然后应用一个四维空间的透视投影，其中人眼点在原点，透视超平面在$w=1$，最后，通过将四维超平面$w=1$与标准三维空间相匹配，实现从四维空间投影回三维空间。也就是说，我们映射
 $$
-\mathrm{R}^{3} \rightarrow \mathrm{R}^{4} \rightarrow \mathrm{R}^{4} \rightarrow \mathrm{R}^{3}
+R^{3} \rightarrow R^{4} \rightarrow R^{4} \rightarrow R^{3}
 $$
-
-by sending
-
+通过发送
 $$
-\mathrm{P} \rightarrow \mathrm{P}^{*}=(\mathrm{P}, 1) \rightarrow \mathrm{Q}^{*}=(\mathrm{Q}, 1)=(\mathrm{P}, 1) * \mathrm{M} * \mathrm{G} \rightarrow \mathrm{Q},
+P \rightarrow P^{*}=(P, 1) \rightarrow Q^{*}=(Q, 1)=(P, 1) *M * G \rightarrow Q,
 $$
+其中$G$是$R^{4}$从原点到超平面$w=1$的透视变换。
 
-where $G$ is the perspective transformation of $R^{4}$ from the origin into the hyperplane $\mathrm{w}=1$.
+从计算机图形学和几何建模的角度来看，这种分解不是很令人满意。为了完成这个分解，我们需要将一个四维空间的任意变换M分解成简单的、有几何意义的四维变换。虽然有可能这样做，但这违反了我们正在努力实现的精神。在计算机图形学和几何建模中，我们通常应用建模转换来在空间中定位对象，然后应用透视投影来在屏幕上定位对象以进行查看。所有这些变换都发生在三维空间中所以我们不需要讨论高维空间的变换。正是这些三维变换，我们想在任意射影变换的分解中重新得到。
 
-From the point of view of computer graphics and geometric modeling, this decomposition is not very satisfactory. To complete this decomposition, we would need to factor an arbitrary transformation M of four-dimensional space into simple, geometrically meaningful, fourdimensional transformations. While it is possible to do so, this violates the spirit of what we are trying to accomplish. In computer graphics and geometric modeling, we generally apply modeling transformations to position an object in space, and then apply a perspective projection to position the object on the screen for viewing. All these transformations occur in three dimensions so we should never really need to discuss transformations of higher-dimensional space. It is these three-dimensional transformations that we would like to recapture in our decomposition of an arbitrary projective transformation.
 
-\section{Second Decomposition Algorithm Affine $*$ Projective}
-To obtain a better decomposition, we can factor any projective transformation by using the product formula
-
+\subsection*{第二个分解算法——仿射$*$射影}
+为了得到更好的分解，我们可以利用乘积公式因式分解任何射影变换
 $$
 \left|\begin{array}{cc}
-\mathrm{L} & \mathrm{N}^{\mathrm{t}} \\
-\mathrm{T} & \mathrm{d}
+L & N^{\mathrm{t}} \\
+T & d
 \end{array}\right|=\left|\begin{array}{cc}
-\mathrm{L} & 0 \\
-\mathrm{~T} & 1
+L & 0 \\
+T & 1
 \end{array}\right| *\left|\begin{array}{cc}
-\mathrm{I} & \Omega^{\mathrm{t}} \\
-0 & \mathrm{~d}-\mathrm{T} * \Omega^{\mathrm{t}}
+I & \Omega^{\mathrm{t}} \\
+0 & d-T * \Omega^{\mathrm{t}}
 \end{array}\right|,
 $$
+其中$L *\Omega^{\mathrm{t}}=N^{\mathrm{t}}$ 当$L$是非奇异时，这个因式分解当然有效，因为那时我们可以简单地取$\Omega=N *\left(L^{-1}\right)^{\mathrm{t}}$，但即使$L$是奇异的，只要$N$在$L^{\mathrm{t}}$的图像中，它也是有效的。现在，第一个因素只是由线性变换L和平移$T$给出的仿射变换，而第二个因素是一个纯粹的射影变换。我们从Gem III.3中知道如何将三维空间的任何仿射变换分解成简单的、有几何意义的因子。因此，如果$N$在$L^{\mathrm{t}}$的图像中，我们可以用这个乘积公式把投影变换分解成简单的、有几何意义的因子，然后是一个纯投影变换。
 
-\section{III.2 DECOMPOSING PROJ ECTIVE TRANSFORMATIONS}
-where $\mathrm{L} * \Omega^{\mathrm{t}}=\mathrm{N}^{\mathrm{t}}$ This factoring certainly works when $\mathrm{L}$ is nonsingular, since then we can simply take $\Omega=N *\left(\mathrm{~L}^{-1}\right)^{\mathrm{t}}$, but it also works even if $\mathrm{L}$ is singular provided only that $\mathrm{N}$ is in the image of $\mathrm{L}^{\mathrm{t}}$. Now the first factor is simply the affine transformation given by the linear transformation L followed by the translation $\mathrm{T}$, and the second factor is a pure projective transformation. We know from Gem III.3 how to factor any affine transformation of three-dimensional space into simple, geometrically meaningful factors. Thus, if $\mathrm{N}$ is in the image of $\mathrm{L}^{\mathrm{t}}$, we can use this product formula to decompose a projective transformation into simple, geometrically meaningful factors, followed by a pure projective transformation.
-
-What is the effect of the pure projective transformation? Consider the pure projective transformation matrix
-
+纯投射变换的效果是什么？考虑纯投射变换矩阵
 $$
-\mathrm{M}^{*}=\left|\begin{array}{cc}
-\mathrm{I} & \Omega^{\mathrm{t}} \\
-0 & \mathrm{~d}^{*}
+M^{*}=\left|\begin{array}{cc}
+I & \Omega^{\mathrm{t}} \\
+0 & d^{*}
 \end{array}\right| .
 $$
-
-By convention, $\mathrm{M}^{*}$ transforms a point according to the formula
-
+按照约定，$M^{*}$根据如下公式转换一个点
 $$
 P_{\text {new }}=P /\left(P \cdot \Omega+d^{*}\right) \text {. }
 $$
-
-Thus, any point $\mathrm{P}$ satisfying the equation
-
+因此，任意点$P$满足方程
 $$
 P \cdot \Omega+d^{*}=1
 $$
-
-is left invariant by the transformation $\mathrm{M}^{*}$. But this equation is linear, so it defines a plane. Thus, the projective transformation $\mathrm{M}^{*}$ leaves a plane of points unmoved. Moreover, if $S$ is the plane defined by the linear equation
-
+由$M^{*}$变换保持不变。但是这个方程是线性的，所以它定义了一个平面。因此，射影变换$M^{*}$留下一个点平面不动。此外，如果$S$是由线性方程定义的平面
 $$
 P \cdot \Omega+d^{*}=0
 $$
-
-then $\mathrm{M}^{*}$ maps $\mathrm{S}$ to infinity. Finally, for an arbitrary point $\mathrm{P}$
-
+$M^{*}$则将$S$映射到无穷远。最后，对于任意点$P$
 $$
-(P \cdot \Omega+d *)=\text { signed distance to the plane } S .
+(P \cdot \Omega+d *)=\text { 有符号的到平面}S\text{的距离 }.
 $$
+因此，纯射影变换$M^{*}$将与$S$之间具有固定距离的平面映射到与$S$之间具有新的固定距离的其他平面上。
 
-Thus, the pure projective transformation $\mathrm{M}^{*}$ maps planes at a fixed
+从计算机图形学和几何建模的角度来看，这种将任意射影变换分解为纯仿射变换和纯射影变换的乘积的方法仍然不能完全令人满意。在计算机图形学中，仿射建模转换之后通常是透视图投影。因此，只要有可能，我们希望将射影变换分解为仿射变换和透视投影的乘积。
 
-\section{III.2 DECOMPOSING PROJ ECTIVE TRANSFORMATIONS}
-distance from $\mathrm{S}$ into other planes at a new fixed distance from S. Note, too, that the plane at infinity $(\mathrm{w}=0)$ is mapped to a finite plane.
+在一种特殊情况下，我们确实达到了这个目标。观察,如果$d^{*}=0$,那么$P_{\text {new }} \cdot \Omega=1$。因此，$P_{\text {new}}$始终位于$M^{*}$的不变平面上。在这种情况下，$M^{*}$实际上是一个透视投影，其视点位于原点，透视平面由线性方程$P \cdot \Omega=1$给出。因此，如果$N^{\mathrm{t}}=L * \Omega^{\mathrm{t}}$(即，如果$N$在$L$的图像中，例如$L$是非单数)和$\mathrm{d}=* \Omega^{\mathrm{t}}$，那么我们的乘积公式实际上给出了我们想要的分解，因为第二个因素是一个透视投影。更一般地，我们需要确定投影变换$M$何时具有透视图因子$M^{*}$。这里可以应用的一个提示是，如果$d^{*}=0$，那么$\operatorname{Det}\left(M^{*}\right)=0$。
 
-From the perspective of computer graphics and geometric modeling, this decomposition of an arbitrary projective transformation into the product of a purely affine and a purely projective transformation is still not entirely satisfactory. In computer graphics, affine modeling transformations are usually followed by perspective projections. Thus, we would like, whenever possible, to factor a projective transformation into the product of an affine transformation and a perspective projection.
-
-In one special case we do actually achieve this goal. Observe that if $\mathrm{d}^{*}=0$, then $\mathrm{P}_{\text {new }} \cdot \Omega=1$. Thus, $\mathrm{P}_{\text {new }}$ always lies on the invariant plane of $\mathrm{M}^{*}$. In this case, $\mathrm{M}^{*}$ is actually a perspective projection with the eyepoint at the origin and the perspective plane given by the linear equation $\mathrm{P} \cdot \Omega=1$. Thus, if $\mathrm{N}^{\mathrm{t}}=\mathrm{L} * \Omega^{\mathrm{t}}$ (that is, if $\mathrm{N}$ is in the image of $\mathrm{L}^{\mathrm{t}}$, e.g., $\mathrm{L}$ is nonsingular) and $\mathrm{d}=* \Omega^{\mathrm{t}}$, then our product formula actually give us the decomposition that we desire, since the second factor is a perspective projection. More generally, we need to decide when a projective transformation $\mathrm{M}$ has a perspective factor $\mathrm{M}^{*}$. One hint we can apply here is that if $d^{*}=0$, then $\operatorname{Det}\left(\mathrm{M}^{*}\right)=0$.
-
-\section{Third Decomposition Algorithm- Perspective $*$ Affine}
-If a projective transformation has a perspective factor, then it must be a singular matrix. This is easy to see because every perspective transformation M has an eyepoint E that is mapped to a singularity-that is, to the point with homogeneous coordinates $(0,0,0,0)$. Thus,
-
+\subsection*{第三分解算法-透视$*$仿射}
+如果一个射影变换有一个透视因子，那么它一定是一个奇异矩阵。这很容易看出，因为每个透视变换$M$都有一个眼点$E$，它被映射到一个奇点——也就是说，映射到齐次坐标$(0,0,0,0)$的点。因此,
 $$
 \mathrm{E} * \mathrm{M}=0 \text {, }
 $$
+所以眼点$E$是矩阵$M$的特征向量对应于特征值0。因此，$M$必须是奇异的。我们将证明，如果$L$是非奇异的，那么反过来也是成立的。也就是说，如果$M$是一个奇异的$4 \times 4$矩阵，其上$3 \times3$子矩阵L是非奇异的，那么M可以因式分解成一个透视图投影和一个仿射变换的乘积。
 
-so the eyepoint $\mathrm{E}$ is an eigenvector of the matrix $M$ corresponding to the eigenvalue 0 . Thus, $M$ must be singular. We shall show that if $L$ is nonsingular, then the converse is also true. That is, if $\mathrm{M}$ is a singular $4 \times 4$ matrix whose upper $3 \times 3$ submatrix L is nonsingular, then M can be factored into the product of a perspective projection and an affine transformation.
-
-\section{III.2 DECOMPOSING PROJ ECTIVE TRANSFORMATIONS}
-Suppose, then, that we have a singular $4 \times 4$ matrix
-
+那么，假设我们有一个奇异的$4 \times 4$矩阵
 $$
 \mathrm{M}=\left|\begin{array}{cc}
 \mathrm{L} & \mathrm{N}^{\mathrm{t}} \\
 \mathrm{T} & \mathrm{d}
 \end{array}\right|
 $$
+表示一个射影变换，并且线性变换$L$是非奇异的。由于$M$是单数，$\operatorname{Det}(M)=0$。因此，它的一个特征值是0。设$E$是一个非零特征向量，对应于特征值0。由于L是非奇异的，E不能位于无穷远处——也就是说，$E \neq\left(e_{1}, e_{2}, e_{3^{\prime}} 0\right)$——否则，$L$也会有一个非零的特征向量，对应于特征值0。我们将使用$E$作为透视投影的视点。
 
-representing a projective transformation, and that the linear transformation L is nonsingular. Since $M$ is singular, $\operatorname{Det}(M)=0$. Therefore, one of its eigenvalues is 0 . Let $\mathrm{E}$ be a nonzero eigenvector corresponding to the eigenvalue 0. Since L is nonsingular, E cannot lie at infinity-that is, $E \neq\left(e_{1}, e_{2}, e_{3^{\prime}} 0\right)$-otherwise, L would also have a nonzero eigenvector corresponding to the eigenvalue 0 . We will use $\mathrm{E}$ as the eyepoint of the perspective projection.
-
-To complete the definition of the perspective transformation, we also need the perspective plane. Recall that by convention a point $\mathrm{P}$ is mapped by the projective transformation $M$ to the point
-
+为了完成透视变换的定义，我们还需要透视平面。回忆一下，根据约定，点$P$由投影变换$M$映射到该点
 $$
-\mathrm{P}_{\text {new }}=(\mathrm{P} * \mathrm{~L}+\mathrm{T}) /(\mathrm{P} \cdot \mathrm{N}+\mathrm{d}) .
+P_{\text {new }}=(P * L+T) /(P \cdot N+d) .
 $$
-
-Thus, points on the plane $S$ defined by the linear equation
-
+因此，平面$S$上的点由线性方程定义
 $$
-\mathrm{P} \cdot \mathrm{N}+\mathrm{d}=1
+P \cdot N+d=1
 $$
-
-are not affected by the projective part of the transformation. Let $\mathrm{R}$ be the perspective projection defined by the eyepoint $\mathrm{E}$ and the perspective plane $\mathrm{S}$, and let $\mathrm{A}$ be the affine transformation defined by the linear transformation L and the translation T. Then we shall show that
-
+不受变换的投影部分的影响。设$R$为视点$E$和透视平面$S$所定义的透视图投影，设$A$为线性变换$L$和平移$T$所定义的仿射变换
 $$
 \mathrm{M}=\mathrm{R} * \mathrm{~A} \text {. }
 $$
 
-We can verify that this equation is valid by checking that it holds for all points. If $\mathrm{P}$ is in $\mathrm{S}$, then $\mathrm{P} * \mathrm{R}=\mathrm{P}$ and $\mathrm{P} \cdot \mathrm{N}+\mathrm{d}=1$, so
-
+我们可以通过检验这个方程对所有点都成立来验证它是有效的。如果$P$在$S$中，则$P * R=P$和$P \cdot N+d=1$，则
 $$
 \mathrm{P} * \mathrm{M}=(\mathrm{P} * \mathrm{~L}+\mathrm{T})=\mathrm{P} * \mathrm{~A}=\mathrm{P} *(\mathrm{R} * \mathrm{~A}) \text {. }
 $$
-
-If $\mathrm{P}$ is not in $\mathrm{S}$, then the line from the eyepoint $\mathrm{E}$ to the point $\mathrm{P}$ intersects the plane $S$ in a unique point $Q$ so
+如果$P$不在$S$中，则眼点$E$到点$P$的直线与平面$S$相交于唯一点$Q$
 
 $$
 P=\lambda Q+(1-\lambda) E \text {. }
 $$
 
-\section{III.2 DECOMPOSING PROJ ECTIVE TRANSFORMATIONS}
 Therefore, because $\mathrm{E}$ is an eigenvector of $\mathrm{M}$ corresponding to the eigenvalue 0 ,
 
 $$
@@ -268,17 +219,14 @@ Thus, we have succeeded in factoring a singular projective transformation $\math
 
 Still, this factoring is not quite satisfactory, since in geometric modeling the perspective transformation comes last rather than first. Therefore, let us try to reverse the order of our factors.
 
-\section{Fourth Decomposition Algorithm- Affine $*$ Perspective}
+\subsection*{Fourth Decomposition Algorithm- Affine $*$ Perspective}
 Consider again a singular $4 \times 4$ matrix
-
 $$
 M=\left|\begin{array}{cc}
 \mathrm{L} & \mathrm{N}^{\mathrm{t}} \\
 \mathrm{T} & \mathrm{d}
 \end{array}\right|
 $$
-
-\section{III.2 DECOMPOSING PROJ ECTIVE TRANSFORMATIONS}
 representing a projective transformation where the linear transformation $\mathrm{L}$ is nonsingular. Again, let E be a nonzero eigenvector of M corresponding to the eigenvalue 0 , and let $S$ be the plane defined by the linear equation
 
 $$
@@ -317,11 +265,9 @@ $$
 &=\mathrm{P} * *(\mathrm{~A} * \mathrm{R}) .
 \end{aligned}
 $$
-
-\section{III.2 DECOMPOSING PROJ ECTIVE TRANSFORMATIONS}
 The last equality holds because $\mathrm{P}$ lies on the line joining $\mathrm{Q}$ and $\mathrm{E}$, so $\mathrm{A}\left(\mathrm{P}^{*}\right)$ lies on the line joining $\mathrm{A}\left(\mathrm{Q}^{*}\right)$ and $\mathrm{A}\left(\mathrm{E}^{*}\right)$. Therefore, the perspective projection $R$ maps $A\left(P^{*}\right)$ to $A\left(Q^{*}\right)$.
 
-\section{Summary}
+\subsection*{Summary}
 To summarize: We have four ways of decomposing a projective transformation
 
 $$
